@@ -41,13 +41,17 @@ def build_orchestrator(settings: Settings, provider: str) -> tuple[Orchestrator,
         client = StubProvider(default_stub_behavior())
         return Orchestrator(settings, store, client=client), True
     if provider == "openai":
-        client = OpenAIProvider(fallback_model=settings.model_fallback)
+        client = OpenAIProvider(fallback_model=settings.model_fallback,
+                                timeout_s=settings.llm_timeout_s,
+                                max_output_tokens=settings.max_output_tokens)
         return Orchestrator(settings, store, client=client), False
     # auto: real provider when a key exists, otherwise stub (labelled).
     if os.environ.get("OPENAI_API_KEY"):
         return Orchestrator(settings, store,
                             client=OpenAIProvider(
-                                fallback_model=settings.model_fallback)), False
+                                fallback_model=settings.model_fallback,
+                                timeout_s=settings.llm_timeout_s,
+                                max_output_tokens=settings.max_output_tokens)), False
     return Orchestrator(settings, store, client=StubProvider(default_stub_behavior())), True
 
 
@@ -82,9 +86,13 @@ def main(argv=None) -> int:
     sub.add_parser("ledger", help="Show cumulative validation spending")
 
     args = parser.parse_args(argv)
-    settings = Settings.from_env()
-    if args.budget is not None:
-        settings.budget_usd = args.budget
+    try:
+        settings = Settings.from_env()
+        if args.budget is not None:
+            settings.budget_usd = args.budget
+            settings.__post_init__()
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.command == "ledger":
         ledger = ValidationLedger(
             os.path.join(settings.projects_root, "validation_ledger.json"),
@@ -125,7 +133,7 @@ def main(argv=None) -> int:
                                timeout=30, check=False)
             except Exception:
                 pass
-        return 0
+        return 0 if status["state"] == "COMPLETED" else 1
 
     try:
         if args.command == "status":
@@ -134,7 +142,7 @@ def main(argv=None) -> int:
         if args.command == "resume":
             status = orch.run(args.project_id)
             print_status(status)
-            return 0
+            return 0 if status["state"] == "COMPLETED" else 1
         if args.command == "report":
             print(orch.report_text(args.project_id))
             return 0

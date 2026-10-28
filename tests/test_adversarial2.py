@@ -92,8 +92,8 @@ def test_case4_incorrect_arithmetic_flagged(settings, store):
     status, _ = _run_with(settings, store,
                           _base_report("Margin is +25.", "INFERRED"),
                           auditor, fetch)
-    assert status["state"] == "COMPLETED"
-    assert status["corrections"] == 1
+    assert status["state"] == "COMPLETED_WITH_LIMITATIONS"
+    assert status["corrections"] == settings.max_corrections
 
 
 def test_case5_missing_transaction_fee_recorded(settings, store):
@@ -118,8 +118,8 @@ def test_case5_missing_transaction_fee_recorded(settings, store):
     status, engine = _run_with(settings, store,
                                _base_report("Net profit is $40.", "INFERRED"),
                                auditor, fetch)
-    assert status["state"] == "COMPLETED"
-    assert status["corrections"] == 1
+    assert status["state"] == "COMPLETED_WITH_LIMITATIONS"
+    assert status["corrections"] == settings.max_corrections
     # The correction task artifact preserves the fee finding.
     corr = open(os.path.join(status["artifact_dir"], "corrections.md")).read()
     assert "12%" in corr or "fee" in corr.lower()
@@ -137,7 +137,7 @@ def test_case7_outdated_pricing_flagged_as_limitation(settings, store):
                           max_corrections=0)
     # VERIFIED claim + CONFIRMED passage still passes structurally, but the
     # limitation is preserved verbatim in the final report.
-    assert status["state"] == "COMPLETED"
+    assert status["state"] == "COMPLETED_WITH_LIMITATIONS"
     final = open(os.path.join(status["artifact_dir"], "final_report.md")).read()
     assert "2022" in final
 
@@ -162,8 +162,8 @@ def test_case8_contradictory_sources_force_correction(settings, store):
         return "T", "Stub passage."
 
     status, _ = _run_with(settings, store, _base_report(), auditor, fetch)
-    assert status["state"] == "COMPLETED"
-    assert status["corrections"] == 1
+    assert status["state"] == "COMPLETED_WITH_LIMITATIONS"
+    assert status["corrections"] == settings.max_corrections
 
 
 def test_case9_inaccessible_webpage(settings, store):

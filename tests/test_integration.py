@@ -40,10 +40,21 @@ def test_cli_run_status_report_cancel(tmp_path, monkeypatch):
     env = dict(os.environ)
     env["AR_PROJECTS_ROOT"] = str(tmp_path / "projects")
     main = os.path.join(os.path.dirname(__file__), "..", "main.py")
+    # Mock transports in the child process too: the offline CLI test must
+    # never scrape DuckDuckGo or resolve external hosts.
+    harness = (
+        "import main; from tests.conftest import fake_registry, fake_fetch; "
+        "from src.orchestration.engine import Orchestrator; "
+        "main.Orchestrator=lambda settings, store, client: Orchestrator("
+        "settings, store, client=client, registry=fake_registry(), "
+        "fetch_fn=lambda url: (_ for _ in ()).throw(ConnectionError('offline'))); "
+        "raise SystemExit(main.main())"
+    )
     run = subprocess.run(
-        [sys.executable, main, "--provider", "stub", "run", "Research stub things"],
+        [sys.executable, "-c", harness, "--provider", "stub", "run", "Research stub things"],
         capture_output=True, text=True, env=env, timeout=120)
-    assert run.returncode == 0, run.stderr
+    assert run.returncode == 1, run.stderr
+    assert "COMPLETED_WITH_LIMITATIONS" in run.stdout
     assert "COMPLETED" in run.stdout
     pid = [line for line in run.stdout.splitlines() if line.startswith("Created project")][0].split()[-1]
     for cmd in (["status", pid], ["report", pid]):
@@ -57,27 +68,27 @@ def test_cli_run_status_report_cancel(tmp_path, monkeypatch):
     assert "COMPLETED" in cancel.stdout
 
 
-@pytest.mark.skipif(
-    not (os.environ.get("AR_RUN_LIVE") == "1" and os.environ.get("OPENAI_API_KEY")),
-    reason="live API test requires AR_RUN_LIVE=1 and OPENAI_API_KEY")
-def test_live_end_to_end(tmp_path):
-    """Real end-to-end run against the OpenAI Responses API. Only runs when
-    explicitly enabled; it spends real money (small objective, mini models)."""
-    from src.config import Settings
-    from src.llm.provider import OpenAIProvider
-    from src.orchestration.engine import Orchestrator
-    from src.storage.database import Store
-    from src.tools.base import default_registry
+LIVE_REQUIREMENTS = (
+    "OPENAI_API_KEY", "TAVILY_API_KEY", "AR_LIVE_MODEL",
+    "AR_LIVE_INPUT_PRICE", "AR_LIVE_OUTPUT_PRICE", "AR_LIVE_SEARCH_PRICE",
+)
 
-    settings = Settings.from_env()
-    settings.projects_root = str(tmp_path / "projects")
-    settings.models = {k: "gpt-5-mini" for k in settings.models}
-    store = Store(os.path.join(settings.projects_root, "research.db"))
-    engine = Orchestrator(settings, store, client=OpenAIProvider(),
-                          registry=default_registry())
-    pid = engine.create_project(
-        "What is the capital of France and what river runs through it? "
-        "Answer with sources.")
-    status = engine.run(pid)
-    assert status["state"] in ("COMPLETED", "COMPLETED_WITH_LIMITATIONS")
-    assert os.path.exists(os.path.join(status["artifact_dir"], "final_report.md"))
+
+@pytest.mark.skipif(
+    not (os.environ.get("AR_RUN_LIVE") == "1" and
+         all(os.environ.get(name) for name in LIVE_REQUIREMENTS)),
+    reason="live API test requires explicit opt-in, credentials, model and verified prices")
+def test_live_end_to_end():
+    """Paid opt-in only: same bounded full-workflow command as the handoff.
+
+    Use the existing projects root/ledger; a test temp directory must not reset
+    the cumulative cap across repeated live validation attempts.
+    """
+    from scripts.validate_live import main as validate_live
+    assert validate_live([
+        "--authorize-paid-run", "--model", os.environ["AR_LIVE_MODEL"],
+        "--input-usd-per-million", os.environ["AR_LIVE_INPUT_PRICE"],
+        "--output-usd-per-million", os.environ["AR_LIVE_OUTPUT_PRICE"],
+        "--search-usd-per-call", os.environ["AR_LIVE_SEARCH_PRICE"],
+        "--budget", "1", "--total-budget", "2",
+    ]) == 0

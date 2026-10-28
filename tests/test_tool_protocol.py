@@ -379,6 +379,7 @@ def test_mocked_end_to_end_executor_search_to_valid_report(settings, store):
     concatenated-JSON failure anywhere in the path."""
     client = DualFakeClient(default_stub_behavior(), [
         [fn_call("web_search", {"query": "LEGO bulk auction"})],
+        [fn_call("fetch_page", {"url": "https://example.com/stub"})],
         [submit(VALID_REPORT)],
     ])
     engine = Orchestrator(settings, store, client=client,

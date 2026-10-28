@@ -9,7 +9,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class ClaimClassification(str, Enum):
@@ -134,16 +134,20 @@ class ExecutorToolCall(BaseModel):
 # failing these models all become an error output fed back to the model,
 # never a tool invocation.
 
-class WebSearchArgs(BaseModel):
+class ToolArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class WebSearchArgs(ToolArgs):
     query: str = Field(min_length=1)
     max_results: int = Field(default=8, ge=1, le=50)
 
 
-class FetchPageArgs(BaseModel):
+class FetchPageArgs(ToolArgs):
     url: str = Field(min_length=1)
 
 
-class CalculateArgs(BaseModel):
+class CalculateArgs(ToolArgs):
     expression: str = Field(min_length=1)
 
 

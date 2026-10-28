@@ -101,7 +101,7 @@ def test_executor_done_with_tool_calls_rejected():
 
 def test_executor_unknown_tool_reported_not_crash():
     def executor_step(call_no, user):
-        report = default_stub_behavior()["executor"](99, "TOOL RESULT x")["report"]
+        report = default_stub_behavior()["executor"](99, "TOOL RESULT [fetch_page]")["report"]
         if "TOOL RESULT" in user:
             return {"tool_calls": [], "done": True, "report": report}
         return {"tool_calls": [{"tool": "nonexistent_tool", "arguments": {}}],

@@ -38,9 +38,11 @@ def test_resume_from_execution_skips_executor(orch):
     pid = orch.create_project("Stub objective")
     spec = PromptSpec(objective="Stub objective",
                       execution_prompt="Research it.", revision_number=1)
-    report = default_stub_behavior()["executor"](99, "TOOL RESULT x")["report"]
+    report = default_stub_behavior()["executor"](99, "TOOL RESULT [fetch_page]")["report"]
     orch.store.save_output(pid, "prompt_v1", spec.model_dump(mode="json"))
     orch.store.save_output(pid, "execution_0", report)
+    orch.store.record_tool_call(pid, "fetch_page", {"url": "https://example.com/stub"},
+                                True, "Stub passage.")
     orch.store.transition(pid, "CREATED", "EXECUTION_AUDIT", "execution_finished")
     status = orch.run(pid)
     assert status["state"] == "COMPLETED"

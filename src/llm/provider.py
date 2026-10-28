@@ -23,6 +23,10 @@ class LLMError(Exception):
     pass
 
 
+class ProviderControlFlowError(Exception):
+    """Software budget/cancellation gates; never reinterpret as API failures."""
+
+
 def make_strict_schema(schema: dict) -> dict:
     """Rewrite a Pydantic JSON Schema into OpenAI strict-mode shape.
 
@@ -123,7 +127,7 @@ def _is_model_not_found(message: str) -> bool:
 
 def _is_schema_rejection(message: str) -> bool:
     lowered = message.lower()
-    return "schema" in lowered or "400" in lowered
+    return "schema" in lowered or "response_format" in lowered or "text.format" in lowered
 
 
 # The Responses API requires input messages to contain the word "json" in
@@ -141,8 +145,10 @@ JSON_MODE_SUFFIX = ("\n\nReturn your response as valid json only, matching "
 class OpenAIProvider(LLMClient):
     """OpenAI Responses API, structured-output mode."""
 
+    manages_costs = True
+
     def __init__(self, api_key: Optional[str] = None, timeout_s: int = 120,
-                 fallback_model: Optional[str] = None):
+                 fallback_model: Optional[str] = None, max_output_tokens: int = 6000):
         try:
             from openai import OpenAI
         except ImportError as exc:
@@ -150,7 +156,9 @@ class OpenAIProvider(LLMClient):
         key = api_key or os.environ.get("OPENAI_API_KEY")
         if not key:
             raise LLMError("OPENAI_API_KEY is not set")
-        self.client = OpenAI(api_key=key, timeout=timeout_s)
+        self.client = OpenAI(api_key=key, timeout=timeout_s, max_retries=0)
+        self.max_output_tokens = max_output_tokens
+        self.request_cost_cb = None
         self.fallback_model = fallback_model
         # Models that actually executed (fallback included when used).
         self.models_used: set[str] = set()
@@ -175,10 +183,13 @@ class OpenAIProvider(LLMClient):
                 # json_object mode REQUIRES the word "json" in the input
                 # messages; strict mode does not, so only the fallback
                 # input gets the suffix (strict stays the preferred path).
-                effective_input = user if is_strict else user + JSON_MODE_SUFFIX
+                effective_input = user if is_strict else (
+                    user + JSON_MODE_SUFFIX + "\nRequired JSON schema:\n" + json.dumps(schema))
                 try:
                     resp = self._create(system, effective_input, candidate, fmt)
                 except Exception as exc:
+                    if isinstance(exc, ProviderControlFlowError):
+                        raise
                     last_error = exc
                     message = str(exc)
                     if is_strict and _is_schema_rejection(message):
@@ -204,7 +215,7 @@ class OpenAIProvider(LLMClient):
                     payload = json.loads(text)
                 except json.JSONDecodeError as exc:
                     raise LLMError(
-                        f"model returned non-JSON output: {text[:200]}") from exc
+                        "model returned non-JSON output") from exc
                 usage = getattr(resp, "usage", None)
                 in_tokens = int(getattr(usage, "input_tokens", 0) or 0)
                 out_tokens = int(getattr(usage, "output_tokens", 0) or 0)
@@ -215,12 +226,35 @@ class OpenAIProvider(LLMClient):
             + (f"; strict-mode error was: {strict_error}" if strict_error else ""))
 
     def _create(self, system: str, user: str, model: str, fmt: dict):
-        return self.client.responses.create(
+        return self._request(
             model=model,
             instructions=system,
             input=user,
             text={"format": fmt},
         )
+
+    def _request(self, **kwargs):
+        """Gate each actual request (including fallbacks) and account before parsing.
+
+        SDK retries are disabled: a timeout may still have been billed remotely,
+        so it must never silently repeat a paid operation.
+        """
+        cb = getattr(self, "request_cost_cb", None)
+        limit = getattr(self, "max_output_tokens", 6000)
+        if cb:
+            cb(kwargs["model"], max(1, len(json.dumps(kwargs)) // 4), limit,
+               preflight=True)
+        resp = self.client.responses.create(**kwargs, max_output_tokens=limit)
+        self.last_response_id = getattr(resp, "id", None)
+        self.models_used = getattr(self, "models_used", set()) | {kwargs["model"]}
+        usage = getattr(resp, "usage", None)
+        if cb:
+            cb(kwargs["model"], int(getattr(usage, "input_tokens", 0) or 0),
+               int(getattr(usage, "output_tokens", 0) or 0))
+        if getattr(resp, "status", "completed") not in (None, "completed"):
+            raise LLMError("OpenAI response incomplete; increase AR_MAX_OUTPUT_TOKENS "
+                           "within the authorized budget")
+        return resp
 
     # -- native function calling (executor) -------------------------------
     supports_native_tools = True
@@ -242,7 +276,7 @@ class OpenAIProvider(LLMClient):
         for candidate in candidates:
             for tool_defs, is_strict in ((tools, True), (_strip_strict(tools), False)):
                 try:
-                    resp = self.client.responses.create(
+                    resp = self._request(
                         model=candidate,
                         instructions=instructions,
                         input=input_items,
@@ -250,6 +284,8 @@ class OpenAIProvider(LLMClient):
                         tool_choice="auto",
                     )
                 except Exception as exc:
+                    if isinstance(exc, ProviderControlFlowError):
+                        raise
                     last_error = exc
                     message = str(exc)
                     if is_strict and _is_schema_rejection(message):
@@ -357,8 +393,11 @@ def default_stub_behavior() -> dict[str, Any]:
         # First turn: do one search, then finish. The tool loop feeds the
         # tool result back in the next user message; the stub finishes when
         # it sees a tool result marker.
-        if "TOOL RESULT" in user:
+        if "TOOL RESULT [fetch_page]" in user:
             return {"tool_calls": [], "done": True, "report": report}
+        if "TOOL RESULT [web_search]" in user:
+            return {"tool_calls": [{"tool": "fetch_page", "arguments": {
+                "url": "https://example.com/stub"}}], "done": False, "report": None}
         return {"tool_calls": [{"tool": "web_search", "arguments": {"query": "stub query"}}],
                 "done": False, "report": None}
 

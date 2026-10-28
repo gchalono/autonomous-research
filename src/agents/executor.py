@@ -122,7 +122,7 @@ def _capped_items(spec_item: dict, rounds: list[list[dict]],
     """Spec + rounds, dropping whole oldest rounds (calls AND their
     outputs together, so no orphaned outputs) when over the cap."""
     kept = list(rounds)
-    while kept and len(json.dumps([spec_item] + [it for r in kept for it in r])) > max_chars:
+    while len(kept) > 1 and len(json.dumps([spec_item] + [it for r in kept for it in r])) > max_chars:
         kept.pop(0)
     items = [spec_item]
     if len(kept) < len(rounds):
@@ -137,7 +137,8 @@ def _capped_items(spec_item: dict, rounds: list[list[dict]],
 def run_execution_native(tool_client, model: str, base: list[str],
                          registry: ToolRegistry, max_iterations: int = 12,
                          cost_cb=None, tool_runner: Callable | None = None,
-                         estimated_output_tokens: int = 1500) -> ExecutionReport:
+                         estimated_output_tokens: int = 1500, checkpoint=None,
+                         save_checkpoint=None) -> ExecutionReport:
     """Native tool-calling executor loop.
 
     States are explicit and enforced by the API, not by parsing model
@@ -151,27 +152,36 @@ def run_execution_native(tool_client, model: str, base: list[str],
     """
     tools = _function_tools(registry)
     spec_item = {"role": "user", "content": "\n\n".join(base)}
-    rounds: list[list[dict]] = []
-    for turn in range(max_iterations):
+    checkpoint = checkpoint or {}
+    rounds: list[list[dict]] = checkpoint.get("rounds", [])
+    pending = checkpoint.get("pending")
+    account_here = not getattr(tool_client, "manages_costs", False)
+    for turn in range(len(rounds), max_iterations):
         request_items = _capped_items(spec_item, rounds)
-        if cost_cb:
-            est_in = max(1, len(json.dumps(request_items))) // 4
-            cost_cb(model, est_in, estimated_output_tokens, preflight=True)
-        try:
-            out_items, in_tokens, out_tokens = tool_client.create_tool_response(
-                NATIVE_SYSTEM, request_items, tools, model)
-        except LLMError as exc:
-            if is_transient_message(str(exc)):
-                raise  # transient: orchestrator resumes later, not fails
-            raise AgentOutputError(str(exc)) from exc
-        if cost_cb:
-            cost_cb(model, in_tokens, out_tokens)
+        if pending is None:
+            if cost_cb and account_here:
+                est_in = max(1, (len(NATIVE_SYSTEM) + len(json.dumps(tools))
+                                 + len(json.dumps(request_items))) // 4)
+                cost_cb(model, est_in, estimated_output_tokens, preflight=True)
+            try:
+                out_items, in_tokens, out_tokens = tool_client.create_tool_response(
+                    NATIVE_SYSTEM, request_items, tools, model)
+            except LLMError as exc:
+                if is_transient_message(str(exc)):
+                    raise
+                raise AgentOutputError(str(exc)) from exc
+            if cost_cb and account_here:
+                cost_cb(model, in_tokens, out_tokens)
+            pending = {"items": out_items, "outputs": []}
+            if save_checkpoint:
+                save_checkpoint({"rounds": rounds, "pending": pending})
+        out_items = pending["items"]
         calls = [it for it in out_items
                  if isinstance(it, dict) and it.get("type") == "function_call"]
         # Pass 1: a valid submit_report ends the run immediately, without
         # executing any other calls from the same turn.
         for call in calls:
-            if call.get("name") != SUBMIT_REPORT_NAME:
+            if len(calls) != 1 or call.get("name") != SUBMIT_REPORT_NAME:
                 continue
             try:
                 args = json.loads(call.get("arguments", ""))
@@ -183,8 +193,10 @@ def run_execution_native(tool_client, model: str, base: list[str],
                 continue  # invalid: handled as an error output in pass 2
         # Pass 2: dispatch validated actions; everything else is an error
         # output, never an execution.
-        outputs: list[dict] = []
+        outputs: list[dict] = pending["outputs"]
         for index, call in enumerate(calls):
+            if index < len(outputs):
+                continue
             name = call.get("name", "")
             call_id = call.get("call_id") or f"call_{turn}_{index}"
             if name == SUBMIT_REPORT_NAME:
@@ -228,6 +240,8 @@ def run_execution_native(tool_client, model: str, base: list[str],
                 text += _NATIVE_INJECTION_NOTE
             outputs.append({"type": "function_call_output", "call_id": call_id,
                             "output": text})
+            if save_checkpoint:
+                save_checkpoint({"rounds": rounds, "pending": pending})
         new_round = list(out_items) + outputs
         if not calls:
             # Prose instead of a tool call: protocol reminder, bounded by
@@ -236,6 +250,9 @@ def run_execution_native(tool_client, model: str, base: list[str],
                               "research tool or call submit_report with the full "
                               "report. Plain-text answers are not accepted.")})
         rounds.append(new_round)
+        pending = None
+        if save_checkpoint:
+            save_checkpoint({"rounds": rounds, "pending": None})
     raise AgentOutputError(
         f"executor did not finish within {max_iterations} tool iterations")
 
@@ -246,7 +263,7 @@ def run_execution(client: LLMClient, model: str, spec, registry: ToolRegistry,
                   correction=None, previous_report=None,
                   full_reexecution: bool = False,
                   estimated_output_tokens: int = 1500,
-                  tool_client=None) -> ExecutionReport:
+                  tool_client=None, checkpoint=None, save_checkpoint=None) -> ExecutionReport:
     """Run the executor tool loop. ``tool_runner`` defaults to the registry;
     tests inject a fake runner. ``correction`` (a CorrectionTask) makes this
     a targeted correction pass over ``previous_report`` instead of a fresh
@@ -297,7 +314,8 @@ def run_execution(client: LLMClient, model: str, spec, registry: ToolRegistry,
         return run_execution_native(tool_client, model, native_base, registry,
                                     max_iterations=max_iterations, cost_cb=cost_cb,
                                     tool_runner=tool_runner,
-                                    estimated_output_tokens=estimated_output_tokens)
+                                    estimated_output_tokens=estimated_output_tokens,
+                                    checkpoint=checkpoint, save_checkpoint=save_checkpoint)
     base = base + ["Begin. On each turn either request tool calls or return "
                    "done=true with the final report."]
     blocks: list[str] = []   # tool-result blocks, oldest dropped first on overflow

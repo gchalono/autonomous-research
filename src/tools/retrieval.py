@@ -9,19 +9,52 @@ from __future__ import annotations
 import html as html_lib
 import re
 import urllib.request
+import urllib.parse
+import ipaddress
+import socket
 
 from ..security.permissions import Permission
 from .base import Tool, ToolResult
 
 _USER_AGENT = "Mozilla/5.0 (compatible; autonomous-research/1.0)"
 _MAX_CHARS = 12000
+_MAX_BYTES = 2_000_000
+
+
+def validate_public_url(url: str) -> None:
+    """Reject local/file targets before executor and independent audit fetches.
+
+    A network egress policy remains necessary against DNS rebinding: application
+    DNS checks cannot pin urllib's subsequent connection through arbitrary proxies.
+    """
+    parsed = urllib.parse.urlsplit(url)
+    host = parsed.hostname
+    if (parsed.scheme not in ("http", "https") or not host or parsed.username
+            or parsed.password or parsed.port not in (None, 80, 443)):
+        raise ValueError("only public HTTP(S) URLs on ports 80/443 are allowed")
+    if host.lower() == "localhost" or host.lower().endswith((".localhost", ".local", ".internal")):
+        raise ValueError("local network targets are not allowed")
+    addresses = socket.getaddrinfo(host, parsed.port or 443, type=socket.SOCK_STREAM)
+    if not addresses or any(not ipaddress.ip_address(a[4][0]).is_global for a in addresses):
+        raise ValueError("non-public network targets are not allowed")
+
+
+class PublicRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        validate_public_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
 def fetch_url(url: str) -> tuple[str, str]:
     """Return (title, text) for a URL, raising on failure."""
+    validate_public_url(url)
     req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        raw = resp.read().decode("utf-8", errors="replace")
+    opener = urllib.request.build_opener(PublicRedirectHandler())
+    with opener.open(req, timeout=30) as resp:
+        raw_bytes = resp.read(_MAX_BYTES + 1)
+        if len(raw_bytes) > _MAX_BYTES:
+            raise ValueError("page exceeds retrieval size limit")
+        raw = raw_bytes.decode("utf-8", errors="replace")
     title_match = re.search(r"<title[^>]*>(.*?)</title>", raw, re.S | re.I)
     title = html_lib.unescape(re.sub("<[^>]+>", "", title_match.group(1)).strip()) \
         if title_match else ""

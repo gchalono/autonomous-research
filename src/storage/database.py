@@ -99,17 +99,27 @@ class Store:
             "SELECT * FROM projects WHERE id = ?", (project_id,)).fetchone()
         return dict(row) if row else None
 
+    def list_project_spend(self) -> list[dict]:
+        return [dict(row) for row in self.conn.execute("SELECT id, spent_usd FROM projects")]
+
     def transition(self, project_id: str, from_state: str, to_state: str,
-                   event: str, detail: str = "") -> None:
+                   event: str, detail: str = "", counters: dict | None = None) -> None:
         now = _now_iso()
-        self.conn.execute(
-            "UPDATE projects SET state = ?, updated_at = ? WHERE id = ?",
-            (to_state, now, project_id))
-        self.conn.execute(
-            "INSERT INTO events (project_id, ts, from_state, to_state, event, detail)"
-            " VALUES (?, ?, ?, ?, ?, ?)",
-            (project_id, now, from_state, to_state, event, detail))
-        self.conn.commit()
+        counters = counters or {}
+        if set(counters) - {"prompt_revisions", "corrections"}:
+            raise ValueError("unsupported transition counters")
+        assignments = "".join(f", {k} = ?" for k in counters)
+        with self.conn:
+            cur = self.conn.execute(
+                "UPDATE projects SET state = ?, updated_at = ?" + assignments
+                + " WHERE id = ? AND state = ?",
+                (to_state, now, *counters.values(), project_id, from_state))
+            if cur.rowcount != 1:
+                raise RuntimeError("project state changed before transition")
+            self.conn.execute(
+                "INSERT INTO events (project_id, ts, from_state, to_state, event, detail)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (project_id, now, from_state, to_state, event, detail))
 
     def update_counters(self, project_id: str, **fields: Any) -> None:
         assignments = ", ".join(f"{k} = ?" for k in fields)

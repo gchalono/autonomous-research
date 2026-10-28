@@ -1,3 +1,6 @@
+> For the current bounded full-workflow validation, use [LIVE_VALIDATION.md](LIVE_VALIDATION.md).
+> Live end-to-end success of this revision remains unverified.
+
 # Deployment Guide — macOS local execution
 
 This is a local CLI application. No web dashboard, no public deployment,
@@ -54,7 +57,7 @@ python main.py report <PROJECT_ID>
 python main.py resume <PROJECT_ID>
 python main.py cancel <PROJECT_ID>
 python main.py ledger   # cumulative validation spending vs. the $30 cap
-python scripts/smoke_live.py  # minimal live connectivity checks
+python scripts/smoke_live.py --authorize-paid-run  # paid connectivity only; see LIVE_VALIDATION.md
 ```
 
 A run is unattended: it proceeds through prompt creation, evaluation,

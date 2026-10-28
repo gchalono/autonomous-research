@@ -13,8 +13,8 @@ class _FakeResponse:
     def __init__(self, body: str):
         self._body = body.encode()
 
-    def read(self):
-        return self._body
+    def read(self, size=-1):
+        return self._body if size < 0 else self._body[:size]
 
     def __enter__(self):
         return self
@@ -63,7 +63,10 @@ def test_fetch_page_extracts_text(monkeypatch):
     def fake_urlopen(req, timeout=30):
         return _FakeResponse(html)
 
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    from types import SimpleNamespace
+    import src.tools.retrieval as retrieval
+    monkeypatch.setattr(retrieval, "validate_public_url", lambda url: None)
+    monkeypatch.setattr(urllib.request, "build_opener", lambda *args: SimpleNamespace(open=fake_urlopen))
     title, text = fetch_url("https://example.com")
     assert title == "Example Title"
     assert "Hello world" in text
