@@ -88,7 +88,11 @@ def test_correction_then_approve(settings, store):
                                 "verification_method": "re-fetch", "status": "OPEN"}],
                     "rationale": "fix it", "verified_sources": [],
                     "unverified_sources": []}
-        return _base_audit()
+        result = _base_audit()
+        import json
+        prior = json.loads(user.split("PREVIOUS AUDIT ISSUES:\n")[1].split("\nReassess")[0])
+        result["issues"] = [{**i, "status": "RESOLVED"} for i in prior]
+        return result
 
     behavior["auditor"] = auditor
     engine = Orchestrator(settings, store, client=StubProvider(behavior),
@@ -145,8 +149,9 @@ def test_budget_exhaustion_preserves_intermediate_work(settings, store):
     pid = engine.create_project("Stub objective")
     status = engine.run(pid)
     assert status["state"] == "BUDGET_EXHAUSTED"
-    # The prompt draft completed before the budget ran out: preserved.
-    assert os.path.exists(os.path.join(status["artifact_dir"], "prompt_v1.md"))
+    # Even the first request must respect a tiny budget.
+    assert engine.client.calls == {}
+    assert status["spent_usd"] == 0
 
 
 def test_invalid_transitions_rejected():

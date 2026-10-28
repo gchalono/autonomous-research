@@ -1,5 +1,10 @@
 # Autonomous Research System
 
+Current engineering status: [ENGINEERING_AUDIT.md](ENGINEERING_AUDIT.md).
+The full native workflow is tested offline; live end-to-end success remains
+unverified. See [LIVE_VALIDATION.md](LIVE_VALIDATION.md) for a bounded, explicitly
+authorized live run using existing local credentials.
+
 A deterministic four-agent research application. One command replaces a
 manual workflow across four separate ChatGPT conversations:
 
@@ -118,6 +123,7 @@ the final report come from code re-fetching, never from LLM assertions.
 |---|---|---|
 | `OPENAI_API_KEY` | — | Enables real LLM research |
 | `TAVILY_API_KEY` | — | Reliable search backend |
+| `AR_MAX_OUTPUT_TOKENS` | `6000` | Hard per-request output token limit, including reasoning tokens |
 | `AR_BUDGET_USD` | `10.0` | Per-project spending target |
 | `AR_MODEL_CREATOR` / `AR_MODEL_EVALUATOR` / `AR_MODEL_EXECUTOR` / `AR_MODEL_AUDITOR` | `gpt-5.4-mini` / `gpt-5.4-mini` / `gpt-5.6-terra` / `gpt-5.6-terra` | Model per role (re-verify: `gpt-5` family is deprecated, shutdown announced Dec 11, 2026) |
 | `AR_MAX_PROMPT_REVISIONS` | `3` | Prompt revision cap |
@@ -132,11 +138,11 @@ availability changes.
 ## Tests
 
 ```bash
-pytest tests/ -q
+.venv/bin/python -m pytest tests/ -q
 ```
 
-67 tests pass; 1 skipped (the live-API end-to-end test, which only runs
-with `AR_RUN_LIVE=1` and a real `OPENAI_API_KEY`).
+142 tests pass; 1 skipped (the live-API end-to-end test, which only runs
+with `AR_RUN_LIVE=1`, both API credentials, an explicit model and prices).
 
 Coverage: everything above, plus the Phase 2 adversarial suite —
 strict-mode schema validity for every contract, provider fallback when a
@@ -209,3 +215,7 @@ unsupported profitability assumption).
 - Exact-once execution against external APIs is not claimed: if a
   process dies mid-API-call, resume may repeat that call. Step outputs
   are idempotent; external side effects are not.
+
+CLI `run` / `resume` exit 0 only for clean `COMPLETED`, 1 for other outcomes
+(including limitations or transient interruption), and 2 for argument/provider
+configuration errors. Status/report inspection commands do not start research.

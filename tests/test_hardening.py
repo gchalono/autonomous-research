@@ -20,7 +20,7 @@ def test_preflight_blocks_call_that_would_breach_budget(settings, store):
                           registry=fake_registry(), fetch_fn=fake_fetch)
     pid = engine.create_project("obj")
     cb = engine._cost_cb(pid)
-    # First call is never preflight-blocked (no deadlock on tiny budgets).
+    # A first call with sufficient budget passes without recording spend.
     cb("gpt-5.4-mini", 100, 1500, preflight=True)
     # Spend nearly the whole budget, then a new estimated call must refuse.
     engine.store.add_spend(pid, 9.999)
@@ -196,7 +196,7 @@ def test_new_claim_outcomes_analyzer_rules():
     r = _report([{"id": "C1", "text": "rejected", "classification": "UNSUPPORTED",
                   "source_ids": []}])
     issues = analyze_claim_support(r, {"S1": VerificationStatus.CONFIRMED}, [])
-    assert issues and all(i.severity.value == "MINOR" for i in issues)
+    assert any(i.severity.value == "MINOR" and i.affected_claim_or_section == "C1" for i in issues)
     # UNSUPPORTED with a source the executor actually fetched is clean.
     import json as _json
     fetched = [{"tool": "fetch_page",

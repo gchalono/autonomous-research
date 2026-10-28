@@ -58,13 +58,15 @@ TRANSITIONS: dict[State, dict[State, str]] = {
     },
     State.EXECUTION_CORRECTION: {State.EXECUTION_AUDIT: "correction_finished",
                                  State.FAILED: "failed"},
-    State.FINALIZING: {State.COMPLETED: "finalized", State.FAILED: "failed"},
+    State.FINALIZING: {State.COMPLETED: "finalized",
+                       State.COMPLETED_WITH_LIMITATIONS: "finalized_with_limitations",
+                       State.FAILED: "failed"},
 }
 
 # Cancellation and budget exhaustion are software events, allowed from any
 # non-terminal state. They are deliberately NOT in TRANSITIONS so that no
 # agent decision can ever invoke them.
-SOFTWARE_EVENTS = {"cancel", "budget_exhausted"}
+SOFTWARE_EVENTS = {"cancel", "budget_exhausted", "runtime_exceeded"}
 
 
 class InvalidTransitionError(ValueError):
@@ -77,7 +79,11 @@ def validate_transition(from_state: State, to_state: State, event: str) -> None:
         raise InvalidTransitionError(
             f"cannot leave terminal state {from_state.value}")
     if event in SOFTWARE_EVENTS:
-        return  # software event from any non-terminal state
+        expected = {"cancel": State.CANCELLED, "budget_exhausted": State.BUDGET_EXHAUSTED,
+                    "runtime_exceeded": State.FAILED}
+        if to_state != expected[event]:
+            raise InvalidTransitionError(f"invalid target for {event}: {to_state}")
+        return
     allowed = TRANSITIONS.get(from_state, {})
     if to_state not in allowed or allowed[to_state] != event:
         raise InvalidTransitionError(

@@ -47,7 +47,15 @@ def _eval(node: ast.AST) -> float:
             return node.value
         raise ValueError("only numeric literals are allowed")
     if isinstance(node, ast.BinOp) and type(node.op) in _BINOPS:
-        return _BINOPS[type(node.op)](_eval(node.left), _eval(node.right))
+        left, right = _eval(node.left), _eval(node.right)
+        if type(left) not in (int, float) or type(right) not in (int, float):
+            raise ValueError("arithmetic operands must be numbers")
+        if isinstance(node.op, ast.Pow) and (abs(right) > 1000 or abs(left) > 1e100):
+            raise ValueError("exponent exceeds computation limit")
+        result = _BINOPS[type(node.op)](left, right)
+        if isinstance(result, int) and result.bit_length() > 4096:
+            raise ValueError("integer exceeds computation limit")
+        return result
     if isinstance(node, ast.UnaryOp) and type(node.op) in _UNOPS:
         return _UNOPS[type(node.op)](_eval(node.operand))
     if isinstance(node, ast.Compare) and len(node.ops) == 1 and len(node.comparators) == 1 \
@@ -64,7 +72,11 @@ def _eval(node: ast.AST) -> float:
 
 
 def safe_evaluate(expression: str) -> float:
+    if len(expression) > 4000:
+        raise ValueError("expression exceeds computation limit")
     tree = ast.parse(expression, mode="eval")
+    if sum(1 for _ in ast.walk(tree)) > 256:
+        raise ValueError("expression exceeds computation limit")
     return _eval(tree)
 
 

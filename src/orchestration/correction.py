@@ -7,11 +7,15 @@ failure, systematically unreliable evidence, or a misunderstood question.
 """
 from __future__ import annotations
 
-from ..models.contracts import AuditIssue, AuditReport, CorrectionTask, IssueSeverity
+from ..models.contracts import AuditIssue, AuditReport, CorrectionTask, IssueSeverity, IssueStatus
+
+
+def is_unresolved(issue: AuditIssue) -> bool:
+    return issue.status not in (IssueStatus.RESOLVED, IssueStatus.SUPERSEDED)
 
 
 def build_correction_task(audit: AuditReport) -> CorrectionTask:
-    open_issues = [i for i in audit.issues if i.severity in
+    open_issues = [i for i in audit.issues if is_unresolved(i) and i.severity in
                    (IssueSeverity.CRITICAL, IssueSeverity.MAJOR)]
     return CorrectionTask(
         issue_ids=[i.id for i in open_issues],
@@ -29,7 +33,7 @@ def needs_full_reexecution(audit: AuditReport) -> bool:
     """Heuristic, applied by code: full re-execution only when the audit
     says the method or evidence base itself is invalid."""
     text = " ".join((i.description + " " + i.required_correction)
-                    for i in audit.issues).lower()
+                    for i in audit.issues if is_unresolved(i)).lower()
     triggers = ("methodolog", "systematically unreliable", "misunderstood",
                 "fundamentally invalid", "wrong research question")
     return any(t in text for t in triggers)

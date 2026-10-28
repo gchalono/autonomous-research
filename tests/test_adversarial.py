@@ -187,7 +187,7 @@ def test_full_reexecution_wiring(settings, store):
                           registry=fake_registry(), fetch_fn=fake_fetch)
     pid = engine.create_project("obj")
     status = engine.run(pid)
-    assert status["state"] == "COMPLETED"
+    assert status["state"] == "COMPLETED_WITH_LIMITATIONS"
     assert any("FULL RE-EXECUTION" in t for t in transcripts)
 
 
@@ -199,7 +199,7 @@ def test_executor_transcript_is_bounded():
     def executor_step(call_no, user):
         seen_lengths.append(len(user))
         if call_no >= 6:
-            report = default_stub_behavior()["executor"](99, "TOOL RESULT x")["report"]
+            report = default_stub_behavior()["executor"](99, "TOOL RESULT [fetch_page]")["report"]
             return {"tool_calls": [], "done": True, "report": report}
         return {"tool_calls": [{"tool": "web_search", "arguments": {"query": "x"}}],
                 "done": False, "report": None}
@@ -246,8 +246,8 @@ def test_passage_presence_alone_does_not_support_claim(settings, store):
         auditor, fake_fetch)
     pid = engine.create_project("obj")
     status = engine.run(pid)
-    assert status["state"] == "COMPLETED"
-    assert status["corrections"] == 1
+    assert status["state"] == "COMPLETED_WITH_LIMITATIONS"
+    assert status["corrections"] == settings.max_corrections
 
 
 def test_claim_analyzer_unit_cases():

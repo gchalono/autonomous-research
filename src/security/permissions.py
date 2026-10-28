@@ -43,8 +43,8 @@ def require_authorization(permission: Permission, authorized: bool, action: str)
 
 def safe_join(workspace: str, filename: str) -> str:
     """Resolve ``filename`` inside ``workspace`` or raise UnsafePathError."""
-    base = os.path.abspath(workspace)
-    target = os.path.abspath(os.path.join(base, filename))
+    base = os.path.realpath(workspace)
+    target = os.path.realpath(os.path.join(base, filename))
     if target != base and not target.startswith(base + os.sep):
         raise UnsafePathError(f"path escapes workspace: {filename!r}")
     return target

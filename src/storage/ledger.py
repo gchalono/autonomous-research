@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import json
 import os
+import math
+import fcntl
 from datetime import datetime, timezone
 
 from . import artifacts as art
@@ -24,15 +26,25 @@ class ValidationLedger:
         self.path = path
         self.cap_usd = cap_usd
         self.entries: list[dict] = []
-        if os.path.exists(path):
-            try:
-                data = json.load(open(path, encoding="utf-8"))
-                self.entries = data.get("entries", [])
-            except Exception:
-                self.entries = []
+        self._reload()
+
+    def _reload(self):
+        if not os.path.exists(self.path):
+            self.entries = []
+            return
+        # Corrupt accounting must stop spending, never silently reset it.
+        with open(self.path, encoding="utf-8") as fh:
+            data = json.load(fh)
+        entries = data["entries"]
+        if not isinstance(entries, list) or any(
+                not isinstance(e, dict) or not isinstance(e.get("cost_usd"), (int, float))
+                or not math.isfinite(e["cost_usd"]) or e["cost_usd"] < 0 for e in entries):
+            raise ValueError("invalid validation ledger; restore accounting before spending")
+        self.entries = entries
 
     @property
     def total_spent(self) -> float:
+        self._reload()
         return round(sum(e["cost_usd"] for e in self.entries), 6)
 
     @property
@@ -41,6 +53,8 @@ class ValidationLedger:
 
     def record(self, project_id: str, provider: str, model: str,
                cost_usd: float, kind: str) -> dict:
+        if not math.isfinite(cost_usd) or cost_usd < 0:
+            raise ValueError("invalid ledger cost")
         entry = {
             "ts": datetime.now(timezone.utc).isoformat(),
             "project_id": project_id,
@@ -49,9 +63,13 @@ class ValidationLedger:
             "cost_usd": round(cost_usd, 6),
             "kind": kind,
         }
-        self.entries.append(entry)
-        art.atomic_write(self.path, json.dumps(
-            {"cap_usd": self.cap_usd, "entries": self.entries}, indent=2))
+        os.makedirs(os.path.dirname(os.path.abspath(self.path)), exist_ok=True)
+        with open(self.path + ".lock", "a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            self._reload()
+            self.entries.append(entry)
+            art.atomic_write(self.path, json.dumps(
+                {"cap_usd": self.cap_usd, "entries": self.entries}, indent=2))
         return entry
 
     def summary(self) -> dict:

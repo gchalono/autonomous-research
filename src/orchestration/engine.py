@@ -16,6 +16,8 @@ import json
 import os
 import time
 import uuid
+import math
+import fcntl
 from datetime import datetime, timezone
 from typing import Callable, Optional
 
@@ -24,11 +26,12 @@ from ..agents import creator as creator_mod
 from ..agents import evaluator as evaluator_mod
 from ..agents import executor as executor_mod
 from ..agents.common import AgentOutputError
-from ..llm.provider import LLMError
+from ..llm.provider import LLMError, ProviderControlFlowError
 from ..config import Settings
 from ..models.contracts import (AuditDecision, AuditReport, CorrectionTask,
                                 EvaluationDecision, ExecutionReport,
-                                IssueSeverity, PromptSpec)
+                                IssueSeverity, PromptSpec, AuditIssue, IssueStatus,
+                                VerificationStatus)
 from ..storage import artifacts as art
 from ..storage.database import Store
 from ..storage.ledger import ValidationLedger
@@ -39,7 +42,11 @@ from .states import (State, TERMINAL_STATES, InvalidTransitionError,
                      validate_transition)
 
 
-class BudgetExhausted(Exception):
+class BudgetExhausted(ProviderControlFlowError):
+    pass
+
+
+class RunStopped(ProviderControlFlowError):
     pass
 
 
@@ -88,9 +95,9 @@ class Orchestrator:
             pass  # logging must never break a run
 
     def _transition(self, project_id: str, from_state: State, to_state: State,
-                    event: str, detail: str = "") -> None:
+                    event: str, detail: str = "", counters: dict | None = None) -> None:
         validate_transition(from_state, to_state, event)
-        self.store.transition(project_id, from_state.value, to_state.value, event, detail)
+        self.store.transition(project_id, from_state.value, to_state.value, event, detail, counters)
         self._log(project_id, {"type": "transition", "event": event,
                                "from": from_state.value, "to": to_state.value,
                                "detail": detail[:200]})
@@ -115,9 +122,8 @@ class Orchestrator:
             reason = (f"runtime limit exceeded ({elapsed:.0f}s > "
                       f"{self.settings.max_runtime_s}s)")
             self.store.update_counters(project_id, failure_reason=reason)
-            # Event name must be "failed": the state machine only permits
-            # FAILED edges under that event from every non-terminal state.
-            self._transition(project_id, state, State.FAILED, "failed",
+            # Software runtime events are valid from every non-terminal phase.
+            self._transition(project_id, state, State.FAILED, "runtime_exceeded",
                              reason)
             self._log(project_id, {"type": "runtime_limit",
                                    "elapsed_s": round(elapsed, 1)})
@@ -129,12 +135,9 @@ class Orchestrator:
                preflight: bool = False) -> None:
             proj = self.store.get_project(project_id)
             if preflight:
-                # Estimate-based guard: refuse a call whose estimated cost
-                # would breach the budget -- but never refuse the first
-                # call of a project, or a too-small budget could deadlock
-                # the run before any work exists. The CUMULATIVE cap, by
-                # contrast, always applies: prior projects' spend counts
-                # even for a new project's first call.
+                self._guard_running(project_id)
+                # Refuse an estimate that would breach either budget,
+                # including the project's first call.
                 estimate = self.settings.estimate_cost_usd(
                     model, in_tokens, out_tokens)
                 if self.ledger.total_spent + estimate > self.ledger.cap_usd:
@@ -147,20 +150,10 @@ class Orchestrator:
                         f"${estimate:.4f} would exceed cumulative validation "
                         f"budget (${self.ledger.total_spent:.4f} spent of "
                         f"${self.ledger.cap_usd:.2f})")
-                if proj["spent_usd"] > 0:
-                    if proj["spent_usd"] + estimate > proj["budget_usd"]:
-                        self._log(project_id, {"type": "preflight_rejected",
-                                               "reason": "project_cap",
-                                               "estimate_usd": round(estimate, 6)})
-                        raise BudgetExhausted(
-                            f"preflight budget check: estimated call cost "
-                            f"${estimate:.4f} would exceed remaining budget "
-                            f"(${proj['budget_usd'] - proj['spent_usd']:.4f})")
+                if proj["spent_usd"] + estimate > proj["budget_usd"]:
+                    raise BudgetExhausted("preflight budget check: estimated call cost "
+                                          "would exceed remaining project budget")
                 return
-            if proj["spent_usd"] >= proj["budget_usd"]:
-                raise BudgetExhausted(
-                    f"budget exhausted (${proj['spent_usd']:.4f} spent of "
-                    f"${proj['budget_usd']:.2f}) before LLM call")
             cost = self.settings.estimate_cost_usd(model, in_tokens, out_tokens)
             self.store.add_spend(project_id, cost)
             self.ledger.record(project_id, "openai", model, cost, "llm_call")
@@ -184,6 +177,13 @@ class Orchestrator:
 
     def _tool_runner(self, project_id: str):
         def runner(tool, arguments: dict):
+            self._guard_running(project_id)
+            charge = (self.settings.tavily_cost_per_search
+                      if tool.name == "web_search" else 0.0)
+            proj = self._project(project_id)
+            if (proj["spent_usd"] + charge > proj["budget_usd"]
+                    or self.ledger.total_spent + charge > self.ledger.cap_usd):
+                raise BudgetExhausted("tool preflight would exceed project or cumulative budget")
             result = tool.invoke(arguments)
             self.store.record_tool_call(project_id, tool.name, arguments,
                                         result.ok, result.preview(), result.cost_usd)
@@ -203,6 +203,9 @@ class Orchestrator:
 
     # ------------------------------------------------------------ lifecycle
     def create_project(self, objective: str, budget_usd: Optional[float] = None) -> str:
+        budget = self.settings.budget_usd if budget_usd is None else budget_usd
+        if not math.isfinite(budget) or budget < 0:
+            raise ValueError("budget must be finite and nonnegative")
         project_id = new_project_id()
         self.store.create_project(
             project_id, objective,
@@ -241,7 +244,7 @@ class Orchestrator:
         proj = self._project(project_id)
         issues = self.store.list_issues(project_id)
         open_critical = [i for i in issues
-                         if i["severity"] == "CRITICAL" and i["status"] == "OPEN"]
+                         if i["severity"] == "CRITICAL" and i["status"] not in ("RESOLVED", "SUPERSEDED")]
         return {
             "project_id": project_id,
             "objective": proj["objective"],
@@ -269,7 +272,43 @@ class Orchestrator:
         return "No report has been produced yet for this project."
 
     # ------------------------------------------------------------ main loop
+    def _guard_running(self, project_id: str):
+        state = State(self._project(project_id)["state"])
+        if state in TERMINAL_STATES:
+            raise RunStopped()
+        if self._check_cancel(project_id, state) or self._check_runtime(project_id, state):
+            raise RunStopped()
+
     def run(self, project_id: str) -> dict:
+        # Serialize the projects root, including budget preflight and ledger writes.
+        # flock works on the supported Linux/macOS CLI platforms and releases on crash.
+        os.makedirs(self.settings.projects_root, exist_ok=True)
+        with open(os.path.join(self.settings.projects_root, ".run.lock"), "a") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as exc:
+                raise RuntimeError("another research run is active in this projects root") from exc
+            self._reconcile_spend()
+            return self._run_locked(project_id)
+
+    def _reconcile_spend(self):
+        # SQLite and the JSON ledger cannot share one transaction. Recover a
+        # crash between their writes by retaining the greater recorded total
+        # for each project; never reset either budget on restart.
+        self.ledger.total_spent  # refresh retained entries
+        ledger_spend = {}
+        for entry in self.ledger.entries:
+            pid = entry["project_id"]
+            ledger_spend[pid] = ledger_spend.get(pid, 0.0) + entry["cost_usd"]
+        for row in self.store.list_project_spend():
+            recorded = ledger_spend.get(row["id"], 0.0)
+            delta = row["spent_usd"] - recorded
+            if delta > 0.000001:
+                self.ledger.record(row["id"], "recovery", "unknown", delta, "spend_reconciliation")
+            elif delta < -0.000001:
+                self.store.add_spend(row["id"], -delta)
+
+    def _run_locked(self, project_id: str) -> dict:
         """Run (or resume) a project to a terminal state. Returns status.
 
         Transient provider errors (timeout / rate limit / temporary
@@ -281,6 +320,8 @@ class Orchestrator:
         if self.client is None:
             raise RuntimeError("no LLM client configured")
         cost_cb = self._cost_cb(project_id)
+        if getattr(self.client, "manages_costs", False):
+            self.client.request_cost_cb = cost_cb
         transient_error = None
         try:
             while True:
@@ -303,10 +344,13 @@ class Orchestrator:
                     State.FINALIZING: self._step_finalize,
                 }[state]
                 handler(project_id, cost_cb)
+        except RunStopped:
+            pass
         except BudgetExhausted as exc:
             proj = self._project(project_id)
             state = State(proj["state"])
             if state not in TERMINAL_STATES:
+                self.store.update_counters(project_id, failure_reason=str(exc))
                 self._transition(project_id, state, State.BUDGET_EXHAUSTED,
                                  "budget_exhausted", str(exc))
         except LLMError as exc:
@@ -396,11 +440,10 @@ class Orchestrator:
                 self._transition(project_id, State.PROMPT_REVIEW, State.FAILED,
                                  "prompt_blocked_or_limit", reason)
             else:
-                self.store.update_counters(
-                    project_id, prompt_revisions=proj["prompt_revisions"] + 1)
                 self._transition(project_id, State.PROMPT_REVIEW, State.PROMPT_REVISION,
                                  "prompt_revise",
-                                 "; ".join(evaluation.required_revisions))
+                                 "; ".join(evaluation.required_revisions),
+                                 counters={"prompt_revisions": proj["prompt_revisions"] + 1})
         else:  # BLOCKED
             reason = "prompt evaluator blocked: " + "; ".join(
                 evaluation.critical_issues or ["no reason given"])
@@ -449,6 +492,13 @@ class Orchestrator:
         if stored is not None:
             report = ExecutionReport.model_validate(stored)
         else:
+            boundary_key = f"execution_{attempt}_provenance_start"
+            if self.store.load_output(project_id, boundary_key) is None:
+                previous_boundary = self.store.load_output(
+                    project_id, f"execution_{attempt - 1}_provenance_start") or {}
+                after = (max((t["id"] for t in self.store.list_tool_calls(project_id)), default=0)
+                         if full_reexecution else previous_boundary.get("after_tool_call", 0))
+                self.store.save_output(project_id, boundary_key, {"after_tool_call": after})
             previous_report = None
             if correction is not None and attempt > 0:
                 prev = self.store.load_output(project_id, f"execution_{attempt - 1}")
@@ -466,7 +516,10 @@ class Orchestrator:
                 correction=correction, previous_report=previous_report,
                 full_reexecution=full_reexecution,
                 estimated_output_tokens=self.settings.estimated_output_tokens,
-                tool_client=tool_client)
+                tool_client=tool_client,
+                checkpoint=self.store.load_output(project_id, step_key + "_checkpoint"),
+                save_checkpoint=lambda data: self.store.save_output(
+                    project_id, step_key + "_checkpoint", data))
             self.store.save_output(project_id, step_key, report.model_dump(mode="json"))
         art.write_json(self.settings.projects_root, project_id,
                        f"execution_report_{attempt}.json", report.model_dump(mode="json"))
@@ -483,8 +536,21 @@ class Orchestrator:
         attempt = proj["corrections"]
         report = ExecutionReport.model_validate(
             self.store.load_output(project_id, f"execution_{attempt}"))
-        verification = auditor_mod.verify_sources(
-            report, self.fetch_fn, max_sources=self.settings.max_sources_to_verify)
+        def guarded_fetch(url):
+            self._guard_running(project_id)
+            return self.fetch_fn(url)
+        stored_verification = self.store.load_output(project_id, f"verification_{attempt}")
+        independent_evidence = self.store.load_output(project_id, f"verification_evidence_{attempt}") or {}
+        if stored_verification is None:
+            verification = auditor_mod.verify_sources(
+                report, guarded_fetch, max_sources=self.settings.max_sources_to_verify,
+                evidence_sink=independent_evidence)
+            self.store.save_output(project_id, f"verification_evidence_{attempt}", independent_evidence)
+            self.store.save_output(project_id, f"verification_{attempt}",
+                                   {sid: value.value for sid, value in verification.items()})
+        else:
+            verification = {sid: VerificationStatus(value)
+                            for sid, value in stored_verification.items()}
         # Persist the code-level verification facts on the sources AND write
         # them back, so the final report shows the verified statuses instead
         # of the executor's original UNCHECKED values.
@@ -504,14 +570,20 @@ class Orchestrator:
         # ids must exist, derivations need evidence) regardless of what the
         # auditor LLM concludes.
         from . import claim_check as claim_check_mod
+        boundary = self.store.load_output(project_id, f"execution_{attempt}_provenance_start") or {}
         code_issues = claim_check_mod.analyze_claim_support(
-            report, verification, self.store.list_tool_calls(project_id))
+            report, verification, [t for t in self.store.list_tool_calls(project_id)
+                                   if t["id"] > boundary.get("after_tool_call", 0)])
+        previous_issues = [AuditIssue.model_validate(row)
+                           for row in self.store.list_issues(project_id)]
         payload = self._cached(
             project_id, f"audit_{attempt}",
             lambda: auditor_mod.audit_execution(
                 self.client, self.models["auditor"], proj["objective"], spec,
                 report, verification, cost_cb=cost_cb,
-                estimated_output_tokens=self.settings.estimated_output_tokens))
+                estimated_output_tokens=self.settings.estimated_output_tokens,
+                previous_issues=[i.model_dump(mode="json") for i in previous_issues],
+                independent_evidence=independent_evidence))
         audit = AuditReport.model_validate(payload)
         # The audit's verified/unverified source lists are facts established
         # by code re-fetching, not LLM assertions: overwrite them.
@@ -519,30 +591,28 @@ class Orchestrator:
                                   if st.value == "CONFIRMED"]
         audit.unverified_sources = [sid for sid, st in verification.items()
                                     if st.value != "CONFIRMED"]
-        # Defense in depth: an APPROVE that still lists open CRITICAL or
-        # MAJOR issues -- from the auditor OR from deterministic claim
-        # analysis -- is not an approval (spec 9.4: major defects must be
-        # corrected or explicitly justified, minor issues may remain). The
-        # orchestrator downgrades it; it does not silently pass it through.
+        # Code-owned issues resolve only when re-analysis no longer reproduces
+        # the same defect. LLM-owned issues require explicit auditor resolution.
+        current_code_ids = {i.id for i in code_issues}
+        prior = [i.model_copy(update={"status": IssueStatus.RESOLVED})
+                 if i.id.startswith("CC-") and i.id not in current_code_ids else i
+                 for i in previous_issues]
+        llm_audit = audit.model_copy(update={"issues": [i for i in audit.issues
+                                                       if not i.id.startswith("CC-")]})
+        merged = {i.id: i for i in correction_mod.apply_audit_to_issues(llm_audit, prior)}
+        merged.update({i.id: i for i in code_issues})
         blocking = (IssueSeverity.CRITICAL, IssueSeverity.MAJOR)
-        has_open_blocking = any(
-            i.severity in blocking and i.status.value == "OPEN"
-            for i in audit.issues) or any(
-            i.severity in blocking for i in code_issues)
+        has_blocking = any(i.severity in blocking and correction_mod.is_unresolved(i)
+                           for i in merged.values())
         effective = audit.decision
-        if effective == AuditDecision.APPROVE and has_open_blocking:
+        if effective == AuditDecision.APPROVE and has_blocking:
             effective = AuditDecision.CORRECTIONS_REQUIRED
-        from ..models.contracts import AuditIssue
-        previous_issues = [
-            AuditIssue.model_validate(row)
-            for row in self.store.list_issues(project_id)
-        ]
-        merged = correction_mod.apply_audit_to_issues(audit, previous_issues)
-        merged.extend(code_issues)
-        for issue in merged:
+        audit = audit.model_copy(update={"decision": effective, "issues": list(merged.values())})
+        for issue in audit.issues:
             self.store.upsert_issue(project_id, issue.model_dump(mode="json"))
-        # Correction tasks must cover code issues too, not just LLM ones.
-        audit = audit.model_copy(update={"issues": list(audit.issues) + code_issues})
+        # Persist the effective audit, not the raw model approval. It is also
+        # the checkpoint used by correction routing and final report rendering.
+        self.store.save_output(project_id, f"audit_{attempt}", audit.model_dump(mode="json"))
         art.write_json(self.settings.projects_root, project_id,
                        f"audit_report_{attempt}.json", audit.model_dump(mode="json"))
         art.write_json(self.settings.projects_root, project_id,
@@ -553,7 +623,8 @@ class Orchestrator:
         elif effective in (AuditDecision.CORRECTIONS_REQUIRED, AuditDecision.INCONCLUSIVE):
             if proj["corrections"] >= self.settings.max_corrections:
                 unresolved = [i for i in audit.issues
-                              if i.severity in (IssueSeverity.CRITICAL, IssueSeverity.MAJOR)]
+                              if correction_mod.is_unresolved(i) and
+                              i.severity in (IssueSeverity.CRITICAL, IssueSeverity.MAJOR)]
                 detail = ("correction limit reached; unresolved: "
                           + "; ".join(i.id for i in unresolved))
                 # A limitations outcome still owes the user a final report
@@ -576,12 +647,11 @@ class Orchestrator:
                                self._render_correction(task, audit))
                 self.store.save_output(project_id, f"correction_{attempt}",
                                        task.model_dump(mode="json"))
-                self.store.update_counters(
-                    project_id, corrections=proj["corrections"] + 1)
                 self._transition(project_id, State.EXECUTION_AUDIT,
                                  State.EXECUTION_CORRECTION,
                                  "audit_corrections_required",
-                                 "; ".join(task.issue_ids))
+                                 "; ".join(task.issue_ids),
+                                 counters={"corrections": proj["corrections"] + 1})
         else:  # BLOCKED
             reason = "audit blocked: " + audit.rationale
             self.store.update_counters(project_id, failure_reason=reason)
@@ -617,11 +687,14 @@ class Orchestrator:
         audit = AuditReport.model_validate(
             self.store.load_output(project_id, f"audit_{attempt}"))
         issues = self.store.list_issues(project_id)
-        unresolved = [i for i in issues if i["status"] == "OPEN"
+        unresolved = [i for i in issues if i["status"] not in ("RESOLVED", "SUPERSEDED")
                       and i["severity"] in ("CRITICAL", "MAJOR")]
         final = self._render_final(proj, report, audit, unresolved)
         art.write_text(self.settings.projects_root, project_id, "final_report.md", final)
-        self._transition(project_id, State.FINALIZING, State.COMPLETED, "finalized")
+        limited = bool(unresolved or report.limitations or report.unresolved_dependencies)
+        self._transition(project_id, State.FINALIZING,
+                         State.COMPLETED_WITH_LIMITATIONS if limited else State.COMPLETED,
+                         "finalized_with_limitations" if limited else "finalized")
 
     # ------------------------------------------------------------ rendering
     def _render_execution(self, report: ExecutionReport) -> str:
@@ -657,6 +730,7 @@ class Orchestrator:
         lines = [
             "# Final Report\n",
             f"**Objective:** {proj['objective']}\n",
+            f"**Completion:** {'COMPLETED_WITH_LIMITATIONS' if unresolved or report.limitations or report.unresolved_dependencies or audit.decision != AuditDecision.APPROVE else 'COMPLETED_APPROVED'}\n",
             "## 1. Executive summary\n", report.executive_summary,
             "\n## 2. Research findings\n",
         ]
@@ -674,7 +748,10 @@ class Orchestrator:
         lines.append("\n## 5. Conclusions\n" + report.executive_summary)
         lines.append("\n## 6. Important limitations\n" +
                      ("\n".join(f"- {x}" for x in report.limitations)
-                      if report.limitations else "- None recorded."))
+                      if report.limitations else "- None recorded.") +
+                     ("\nUnresolved dependencies:\n" + "\n".join(
+                         f"- {x}" for x in report.unresolved_dependencies)
+                      if report.unresolved_dependencies else ""))
         lines.append("\n## 7. Audit outcome\n" +
                      f"Decision: {audit.decision.value}\n{audit.rationale}")
         lines.append("\n## 8. Unresolved issues\n" +

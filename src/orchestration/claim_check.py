@@ -29,6 +29,8 @@ module makes sure the necessary conditions are actually enforced.
 """
 from __future__ import annotations
 
+import hashlib
+
 from ..models.contracts import (AuditIssue, ClaimClassification,
                                 ExecutionReport, IssueSeverity, IssueStatus,
                                 VerificationStatus)
@@ -52,28 +54,40 @@ def analyze_claim_support(report: ExecutionReport,
         except Exception:
             continue
 
-    def issue(iid: str, severity: IssueSeverity, target: str, desc: str,
+    def issue(severity: IssueSeverity, target: str, desc: str,
               correction: str) -> AuditIssue:
+        stable_id = hashlib.sha256((target + "|" + desc.split(":")[0]).encode()).hexdigest()[:16]
         return AuditIssue(
-            id=iid, severity=severity, affected_claim_or_section=target,
+            id="CC-" + stable_id, severity=severity, affected_claim_or_section=target,
             description=desc, evidence="",
             required_correction=correction,
             verification_method="Re-run claim-support analysis after correction; "
                                 "auditor re-verifies.",
             status=IssueStatus.OPEN)
 
-    n = 0
+    for kind, records in (("source", report.sources), ("claim", report.claims),
+                          ("finding", report.findings)):
+        seen = set()
+        for record in records:
+            if not record.id.strip() or record.id in seen:
+                issues.append(issue(IssueSeverity.MAJOR, kind + ":" + record.id,
+                                    f"Empty or duplicate {kind} id.", "Use unique nonempty ids."))
+            seen.add(record.id)
+    known_claims = {c.id for c in report.claims}
+    for finding in report.findings:
+        if any(cid not in known_claims for cid in finding.claim_ids):
+            issues.append(issue(IssueSeverity.MAJOR, finding.id,
+                                "Finding references a missing claim.",
+                                "Cite only claims present in the report."))
     for claim in report.claims:
         if not claim.text.strip():
-            n += 1
-            issues.append(issue(f"CC-{n}", IssueSeverity.MAJOR, claim.id,
+            issues.append(issue(IssueSeverity.MAJOR, claim.id,
                                 "Claim text is empty.",
                                 "Remove the claim or supply its text."))
             continue
         dangling = [sid for sid in claim.source_ids if sid not in sources]
         if dangling:
-            n += 1
-            issues.append(issue(f"CC-{n}", IssueSeverity.MAJOR, claim.id,
+            issues.append(issue(IssueSeverity.MAJOR, claim.id,
                                 f"Claim cites source id(s) that do not exist "
                                 f"in the source register: {dangling}.",
                                 "Cite only sources present in the register, "
@@ -82,16 +96,14 @@ def analyze_claim_support(report: ExecutionReport,
                      if verification.get(sid) == VerificationStatus.CONFIRMED]
         if claim.classification == ClaimClassification.VERIFIED:
             if not claim.source_ids:
-                n += 1
-                issues.append(issue(f"CC-{n}", IssueSeverity.CRITICAL, claim.id,
+                issues.append(issue(IssueSeverity.CRITICAL, claim.id,
                                     "Claim is classified VERIFIED but cites no source.",
                                     "Downgrade the classification or cite a "
                                     "retrieved, confirmed source."))
             elif not confirmed:
-                n += 1
                 statuses = {sid: verification.get(sid, VerificationStatus.UNCHECKED).value
                             for sid in claim.source_ids}
-                issues.append(issue(f"CC-{n}", IssueSeverity.CRITICAL, claim.id,
+                issues.append(issue(IssueSeverity.CRITICAL, claim.id,
                                     "Claim is classified VERIFIED but none of its "
                                     f"cited sources was independently confirmed: {statuses}.",
                                     "Downgrade the claim to INFERRED/UNKNOWN, "
@@ -102,8 +114,7 @@ def analyze_claim_support(report: ExecutionReport,
                                       ClaimClassification.PARTIALLY_SUPPORTED,
                                       ClaimClassification.CONTRADICTED):
             if not claim.source_ids:
-                n += 1
-                issues.append(issue(f"CC-{n}", IssueSeverity.MAJOR, claim.id,
+                issues.append(issue(IssueSeverity.MAJOR, claim.id,
                                     f"Claim is classified {claim.classification.value} "
                                     "but cites no source at all.",
                                     "Cite the evidence the claim derives from "
@@ -112,8 +123,7 @@ def analyze_claim_support(report: ExecutionReport,
                                     "HYPOTHETICAL/UNKNOWN."))
         elif claim.classification == ClaimClassification.UNSUPPORTED:
             if not claim.source_ids:
-                n += 1
-                issues.append(issue(f"CC-{n}", IssueSeverity.MINOR, claim.id,
+                issues.append(issue(IssueSeverity.MINOR, claim.id,
                                     "Unsupported claim cites no sources; the "
                                     "evidence examined should be recorded for "
                                     "auditability.",
@@ -122,8 +132,7 @@ def analyze_claim_support(report: ExecutionReport,
 
     for source in report.sources:
         if not source.passage.strip():
-            n += 1
-            issues.append(issue(f"CC-{n}", IssueSeverity.MINOR, source.id,
+            issues.append(issue(IssueSeverity.MINOR, source.id,
                                 "Source has no passage, so its content cannot "
                                 "be checked against any claim.",
                                 "Supply the supporting passage or remove the source."))
@@ -132,8 +141,7 @@ def analyze_claim_support(report: ExecutionReport,
             # The auditor's re-fetch found the passage, but the executor
             # never retrieved this URL during its own tool loop: the
             # citation's provenance is the auditor's, not the executor's.
-            n += 1
-            issues.append(issue(f"CC-{n}", IssueSeverity.MINOR, source.id,
+            issues.append(issue(IssueSeverity.MAJOR, source.id,
                                 "Source was confirmed by the auditor's re-fetch "
                                 "but does not appear in the executor's successful "
                                 "fetch history.",
@@ -142,8 +150,7 @@ def analyze_claim_support(report: ExecutionReport,
 
     failed_tools = [t for t in tool_calls if not t.get("ok")]
     if failed_tools and not report.limitations:
-        n += 1
-        issues.append(issue(f"CC-{n}", IssueSeverity.MINOR, "limitations",
+        issues.append(issue(IssueSeverity.MINOR, "limitations",
                             f"{len(failed_tools)} tool call(s) failed during "
                             "execution, but the report records no limitations.",
                             "Record the failed tools and the conclusions they "

@@ -8,6 +8,7 @@ full list of variables.
 from __future__ import annotations
 
 import os
+import math
 from dataclasses import dataclass, field
 
 
@@ -49,15 +50,15 @@ def load_dotenv(path: str | None = None) -> str | None:
 def _env_float(name: str, default: float) -> float:
     try:
         return float(os.environ.get(name, default))
-    except ValueError:
-        return default
+    except ValueError as exc:
+        raise ValueError(f"{name} must be a number") from exc
 
 
 def _env_int(name: str, default: int) -> int:
     try:
         return int(os.environ.get(name, default))
-    except ValueError:
-        return default
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an integer") from exc
 
 
 @dataclass
@@ -81,6 +82,7 @@ class Settings:
     # checking a call against the remaining budget before it is made.
     # A guardrail heuristic, not a billing prediction.
     estimated_output_tokens: int = 1500
+    max_output_tokens: int = 6000
     # Maximum wall-clock runtime per project in seconds (default 1 hour).
     # The engine fails the run (with artifacts preserved) when exceeded.
     max_runtime_s: int = 3600
@@ -127,6 +129,23 @@ class Settings:
     # and it still runs with timeouts and no network (see tools/computation).
     allow_code_execution: bool = False
 
+    def __post_init__(self):
+        for prices in self.model_prices.values():
+            if len(prices) != 2 or any(not math.isfinite(p) or p < 0 for p in prices):
+                raise ValueError("model prices must be finite and nonnegative")
+        for name in ("budget_usd", "total_validation_budget_usd", "tavily_cost_per_search"):
+            value = getattr(self, name)
+            if not math.isfinite(value) or value < 0:
+                raise ValueError(f"{name} must be finite and nonnegative")
+        for name in ("max_prompt_revisions", "max_corrections", "max_sources_to_verify",
+                     "max_runtime_s"):
+            if getattr(self, name) < 0:
+                raise ValueError(f"{name} must be nonnegative")
+        for name in ("max_tool_iterations", "max_output_tokens", "llm_timeout_s",
+                     "tool_timeout_s", "estimated_output_tokens"):
+            if getattr(self, name) <= 0:
+                raise ValueError(f"{name} must be positive")
+
     @classmethod
     def from_env(cls) -> "Settings":
         models = {
@@ -145,6 +164,7 @@ class Settings:
             llm_timeout_s=_env_int("AR_LLM_TIMEOUT_S", 120),
             tool_timeout_s=_env_int("AR_TOOL_TIMEOUT_S", 30),
             estimated_output_tokens=_env_int("AR_ESTIMATED_OUTPUT_TOKENS", 1500),
+            max_output_tokens=_env_int("AR_MAX_OUTPUT_TOKENS", 6000),
             max_runtime_s=_env_int("AR_MAX_RUNTIME_S", 3600),
             model_fallback=os.environ.get("AR_MODEL_FALLBACK") or None,
             tavily_cost_per_search=_env_float("AR_TAVILY_COST_PER_SEARCH", 0.0),

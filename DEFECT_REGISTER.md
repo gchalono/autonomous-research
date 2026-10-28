@@ -1,3 +1,8 @@
+> Historical record of earlier revisions. Current findings, fixes and limitations
+> are in [ENGINEERING_AUDIT.md](ENGINEERING_AUDIT.md); current bounded live
+> instructions are in [LIVE_VALIDATION.md](LIVE_VALIDATION.md). Earlier readiness
+> claims do not establish live validation of the current implementation.
+
 # Defect Register — Phase 2 Audit
 
 Severity: CRITICAL (breaks live use / safety) · HIGH (materially wrong
