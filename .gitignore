@@ -1,0 +1,17 @@
+# Secrets and local state -- never commit these.
+.env
+.venv/
+projects/
+__pycache__/
+.pytest_cache/
+*.tmp
+
+.env
+.env.*
+!.env.example
+.venv/
+projects/
+__pycache__/
+.pytest_cache/
+*.pyc
+.DS_Store
