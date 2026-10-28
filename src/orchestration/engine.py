@@ -18,6 +18,7 @@ import time
 import uuid
 import math
 import fcntl
+from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Callable, Optional
 
@@ -35,7 +36,7 @@ from ..models.contracts import (AuditDecision, AuditReport, CorrectionTask,
 from ..storage import artifacts as art
 from ..storage.database import Store
 from ..storage.ledger import ValidationLedger
-from ..tools.base import ToolRegistry, default_registry
+from ..tools.base import ToolRegistry, ToolResult, default_registry
 from ..tools.retrieval import fetch_url
 from . import correction as correction_mod
 from .states import (State, TERMINAL_STATES, InvalidTransitionError,
@@ -50,7 +51,7 @@ class RunStopped(ProviderControlFlowError):
     pass
 
 
-class RunFailed(Exception):
+class RunFailed(ProviderControlFlowError):
     def __init__(self, reason: str):
         super().__init__(reason)
         self.reason = reason
@@ -153,10 +154,17 @@ class Orchestrator:
                 if proj["spent_usd"] + estimate > proj["budget_usd"]:
                     raise BudgetExhausted("preflight budget check: estimated call cost "
                                           "would exceed remaining project budget")
+                requests = self.store.load_output(project_id, 'model_request_count') or {'count': 0}
+                if requests['count'] >= self.settings.max_model_requests:
+                    raise RunFailed('model request limit reached; no further request dispatched')
+                self.store.save_output(project_id, 'model_request_count', {'count': requests['count'] + 1})
                 return
             cost = self.settings.estimate_cost_usd(model, in_tokens, out_tokens)
             self.store.add_spend(project_id, cost)
-            self.ledger.record(project_id, "openai", model, cost, "llm_call")
+            self.ledger.record(project_id, "openai", model, cost, "llm_call", usage={
+                "input_tokens": in_tokens, "output_tokens": out_tokens,
+                "observed_usage": getattr(self.client, "last_usage", None),
+                "response_id": getattr(self.client, "last_response_id", None)})
             self._log(project_id, {"type": "llm_call", "model": model,
                                    "input_tokens": in_tokens,
                                    "output_tokens": out_tokens,
@@ -175,9 +183,18 @@ class Orchestrator:
         self.store.save_output(project_id, step_key, payload)
         return payload
 
-    def _tool_runner(self, project_id: str):
-        def runner(tool, arguments: dict):
+    def _tool_runner(self, project_id: str, namespace: str | None = None):
+        def runner(tool, arguments: dict, call_key: str | None = None):
+            result_key = f"{namespace}_tool_{call_key}" if namespace and call_key is not None else None
+            if result_key is not None:
+                cached = self.store.load_output(project_id, result_key)
+                if cached is not None:
+                    if cached['tool'] != tool.name or cached['arguments'] != arguments:
+                        raise RunFailed("native tool checkpoint identity mismatch")
+                    return ToolResult(**cached['result'])
             self._guard_running(project_id)
+            if len(self.store.list_tool_calls(project_id)) >= self.settings.max_tool_calls:
+                raise RunFailed('tool-call limit reached; no further tool dispatched')
             charge = (self.settings.tavily_cost_per_search
                       if tool.name == "web_search" else 0.0)
             proj = self._project(project_id)
@@ -186,13 +203,14 @@ class Orchestrator:
                 raise BudgetExhausted("tool preflight would exceed project or cumulative budget")
             result = tool.invoke(arguments)
             self.store.record_tool_call(project_id, tool.name, arguments,
-                                        result.ok, result.preview(), result.cost_usd)
+                                        result.ok, result.preview(), charge,
+                                        result_key=result_key,
+                                        result_payload={'tool': tool.name, 'arguments': arguments,
+                                                        'result': asdict(result)})
             # Search-tool charges: recorded only when a per-search price is
             # configured; otherwise calls are counted but billed nothing
             # (inventing a price would corrupt cost accounting).
             if tool.name == "web_search" and self.settings.tavily_cost_per_search > 0:
-                self.store.add_spend(project_id,
-                                     self.settings.tavily_cost_per_search)
                 self.ledger.record(project_id, "tavily", "web_search",
                                    self.settings.tavily_cost_per_search,
                                    "search_call")
@@ -517,6 +535,7 @@ class Orchestrator:
                 full_reexecution=full_reexecution,
                 estimated_output_tokens=self.settings.estimated_output_tokens,
                 tool_client=tool_client,
+                checkpointed_tool_runner=self._tool_runner(project_id, step_key),
                 checkpoint=self.store.load_output(project_id, step_key + "_checkpoint"),
                 save_checkpoint=lambda data: self.store.save_output(
                     project_id, step_key + "_checkpoint", data))
@@ -583,7 +602,12 @@ class Orchestrator:
                 report, verification, cost_cb=cost_cb,
                 estimated_output_tokens=self.settings.estimated_output_tokens,
                 previous_issues=[i.model_dump(mode="json") for i in previous_issues],
-                independent_evidence=independent_evidence))
+                independent_evidence=independent_evidence,
+                calculation_evidence=[{'arguments': json.loads(t['arguments_json']),
+                                       'output': t['output_preview']}
+                                      for t in self.store.list_tool_calls(project_id)
+                                      if t['id'] > boundary.get('after_tool_call', 0)
+                                      and t['tool'] == 'calculate' and t['ok']]))
         audit = AuditReport.model_validate(payload)
         # The audit's verified/unverified source lists are facts established
         # by code re-fetching, not LLM assertions: overwrite them.
@@ -772,6 +796,8 @@ class Orchestrator:
                               for sid in c.source_ids) or "no sources cited"
             lines.append(f"- [{c.id}] {c.classification.value}: {c.text}\n"
                          f"  Evidence: {cited}")
+            if c.calculation_expressions:
+                lines.append("  Calculations: " + "; ".join(c.calculation_expressions))
         return "\n".join(lines) + "\n"
 
     def _write_metadata(self, project_id: str) -> None:
@@ -793,6 +819,7 @@ class Orchestrator:
             "models_used": sorted(getattr(self.client, "models_used", set())),
             "configured_models": dict(self.models),
             "tool_calls": len(tool_calls),
+            "model_requests": (self.store.load_output(project_id, 'model_request_count') or {}).get('count', 0),
             "search_calls": len([t for t in tool_calls if t["tool"] == "web_search"]),
             "events": self.store.list_events(project_id),
         })
