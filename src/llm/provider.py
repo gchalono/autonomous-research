@@ -192,13 +192,14 @@ class OpenAIProvider(LLMClient):
                         raise
                     last_error = exc
                     message = str(exc)
-                    if is_strict and _is_schema_rejection(message):
+                    if (is_strict and getattr(exc, 'status_code', 400) == 400
+                            and _is_schema_rejection(message)):
                         # Preserve the strict rejection: if the fallback
                         # also fails, the operator needs to see WHY strict
                         # failed, not just the fallback's error.
                         strict_error = exc
                         continue  # plain JSON mode on the same model
-                    if _is_model_not_found(message):
+                    if getattr(exc, 'status_code', 400) in (400, 404) and _is_model_not_found(message):
                         break  # next candidate model
                     raise LLMError(
                         f"OpenAI Responses API call failed: {exc}"
@@ -248,6 +249,14 @@ class OpenAIProvider(LLMClient):
         self.last_response_id = getattr(resp, "id", None)
         self.models_used = getattr(self, "models_used", set()) | {kwargs["model"]}
         usage = getattr(resp, "usage", None)
+        if usage is None:
+            self.last_usage = None
+        elif callable(getattr(usage, 'model_dump', None)):
+            self.last_usage = usage.model_dump(mode='json')
+        else:
+            self.last_usage = {name: getattr(usage, name) for name in
+                               ('input_tokens', 'output_tokens', 'total_tokens')
+                               if hasattr(usage, name)}
         if cb:
             cb(kwargs["model"], int(getattr(usage, "input_tokens", 0) or 0),
                int(getattr(usage, "output_tokens", 0) or 0))
@@ -288,10 +297,11 @@ class OpenAIProvider(LLMClient):
                         raise
                     last_error = exc
                     message = str(exc)
-                    if is_strict and _is_schema_rejection(message):
+                    if (is_strict and getattr(exc, 'status_code', 400) == 400
+                            and _is_schema_rejection(message)):
                         strict_error = exc
                         continue  # same model, non-strict tool definitions
-                    if _is_model_not_found(message):
+                    if getattr(exc, 'status_code', 400) in (400, 404) and _is_model_not_found(message):
                         break  # next candidate model
                     raise LLMError(
                         f"OpenAI Responses API tool call failed: {exc}"

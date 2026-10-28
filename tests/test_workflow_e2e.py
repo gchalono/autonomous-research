@@ -168,8 +168,8 @@ def test_full_native_workflow_with_revision_correction_and_resume(settings, stor
         resumed_store.close()
 
 
-def test_bounded_live_runner_with_mocked_transports(tmp_path, monkeypatch, capsys):
-    """Exercise the runnable validation command without making a live call."""
+def test_bounded_live_runner_rejects_unrelated_research(tmp_path, monkeypatch, capsys):
+    """Successful fee research does not satisfy the Python acceptance objective."""
     from scripts import validate_live
     calls = install_transports(monkeypatch)
     monkeypatch.setenv('OPENAI_API_KEY', 'offline-placeholder')
@@ -180,11 +180,13 @@ def test_bounded_live_runner_with_mocked_transports(tmp_path, monkeypatch, capsy
     provider.max_output_tokens = 4000
     monkeypatch.setattr(validate_live, 'OpenAIProvider', lambda **kwargs: provider)
     monkeypatch.setattr(validate_live, 'load_dotenv', lambda: None)
+    monkeypatch.setattr(validate_live, 'fetch_url', lambda url: ('Constants', 'None is the sole instance of NoneType.'))
     assert validate_live.main(['--authorize-paid-run', '--model', 'test-model',
                                '--input-usd-per-million', '1', '--output-usd-per-million', '2',
-                               '--search-usd-per-call', '.01']) == 0
+                               '--search-usd-per-call', '.01']) == 1
     summary = json.loads(capsys.readouterr().out)
-    assert all(summary['checks'].values())
+    assert not summary['checks']['documented_fact']
+    assert not summary['checks']['reported_calculation']
     assert summary['status']['state'] == 'COMPLETED'
     assert calls == {'search': 1, 'fetch': 3}
     assert summary['ledger']['spent_usd'] < 1

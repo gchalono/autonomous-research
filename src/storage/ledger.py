@@ -52,7 +52,7 @@ class ValidationLedger:
         return round(self.cap_usd - self.total_spent, 6)
 
     def record(self, project_id: str, provider: str, model: str,
-               cost_usd: float, kind: str) -> dict:
+               cost_usd: float, kind: str, *, usage: dict | None = None) -> dict:
         if not math.isfinite(cost_usd) or cost_usd < 0:
             raise ValueError("invalid ledger cost")
         entry = {
@@ -63,6 +63,8 @@ class ValidationLedger:
             "cost_usd": round(cost_usd, 6),
             "kind": kind,
         }
+        if usage is not None:
+            entry.update(usage)
         os.makedirs(os.path.dirname(os.path.abspath(self.path)), exist_ok=True)
         with open(self.path + ".lock", "a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)

@@ -1,3 +1,6 @@
+Current independent findings IR-1 through IR-6 and operational blockers are in
+[INDEPENDENT_REVIEW.md](INDEPENDENT_REVIEW.md). The entries below retain historical findings.
+
 > Historical record of earlier revisions. Current findings, fixes and limitations
 > are in [ENGINEERING_AUDIT.md](ENGINEERING_AUDIT.md); current bounded live
 > instructions are in [LIVE_VALIDATION.md](LIVE_VALIDATION.md). Earlier readiness

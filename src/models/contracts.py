@@ -109,6 +109,7 @@ class Claim(BaseModel):
     text: str
     classification: ClaimClassification
     source_ids: List[str] = Field(default_factory=list)
+    calculation_expressions: List[str] = Field(default_factory=list)
 
 
 class Finding(BaseModel):

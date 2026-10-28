@@ -41,6 +41,9 @@ Rules:
 - Use web_search to find sources, then fetch_page to read the pages you
   intend to cite. Never cite a URL you did not retrieve.
 - Use calculate for any arithmetic; show the expression in the finding.
+- For a pure arithmetic ESTIMATED claim, list its exact successful calculate
+  expression in calculation_expressions. External factual premises still need
+  cited sources; a calculation does not establish its inputs as facts.
 - Every material external factual claim must carry a source id from a source
   you retrieved, and be classified VERIFIED (directly supported by a
   retrieved passage), INFERRED (derived from verified facts), ESTIMATED
@@ -68,6 +71,9 @@ You have function tools: use them to research. Rules:
 - Use web_search to find sources, then fetch_page to read the pages you
   intend to cite. Never cite a URL you did not retrieve.
 - Use calculate for any arithmetic; show the expression in the finding.
+- For a pure arithmetic ESTIMATED claim, list its exact successful calculate
+  expression in calculation_expressions. External factual premises still need
+  cited sources; a calculation does not establish its inputs as facts.
 - Every material external factual claim must carry a source id from a source
   you retrieved, and be classified VERIFIED (directly supported by a
   retrieved passage), INFERRED (derived from verified facts), ESTIMATED
@@ -138,7 +144,7 @@ def run_execution_native(tool_client, model: str, base: list[str],
                          registry: ToolRegistry, max_iterations: int = 12,
                          cost_cb=None, tool_runner: Callable | None = None,
                          estimated_output_tokens: int = 1500, checkpoint=None,
-                         save_checkpoint=None) -> ExecutionReport:
+                         save_checkpoint=None, checkpointed_tool_runner=None) -> ExecutionReport:
     """Native tool-calling executor loop.
 
     States are explicit and enforced by the API, not by parsing model
@@ -227,7 +233,9 @@ def run_execution_native(tool_client, model: str, base: list[str],
                 outputs.append({"type": "function_call_output", "call_id": call_id,
                                 "output": f"ERROR -- invalid tool arguments: {exc}"})
                 continue
-            if tool_runner is not None:
+            if checkpointed_tool_runner is not None:
+                result = checkpointed_tool_runner(tool, validated.model_dump(), f"{turn}:{index}")
+            elif tool_runner is not None:
                 result = tool_runner(tool, validated.model_dump())
             else:
                 result = tool.invoke(validated.model_dump())
@@ -263,7 +271,8 @@ def run_execution(client: LLMClient, model: str, spec, registry: ToolRegistry,
                   correction=None, previous_report=None,
                   full_reexecution: bool = False,
                   estimated_output_tokens: int = 1500,
-                  tool_client=None, checkpoint=None, save_checkpoint=None) -> ExecutionReport:
+                  tool_client=None, checkpoint=None, save_checkpoint=None,
+                  checkpointed_tool_runner=None) -> ExecutionReport:
     """Run the executor tool loop. ``tool_runner`` defaults to the registry;
     tests inject a fake runner. ``correction`` (a CorrectionTask) makes this
     a targeted correction pass over ``previous_report`` instead of a fresh
@@ -315,7 +324,8 @@ def run_execution(client: LLMClient, model: str, spec, registry: ToolRegistry,
                                     max_iterations=max_iterations, cost_cb=cost_cb,
                                     tool_runner=tool_runner,
                                     estimated_output_tokens=estimated_output_tokens,
-                                    checkpoint=checkpoint, save_checkpoint=save_checkpoint)
+                                    checkpoint=checkpoint, save_checkpoint=save_checkpoint,
+                                    checkpointed_tool_runner=checkpointed_tool_runner)
     base = base + ["Begin. On each turn either request tool calls or return "
                    "done=true with the final report."]
     blocks: list[str] = []   # tool-result blocks, oldest dropped first on overflow

@@ -53,6 +53,10 @@ def analyze_claim_support(report: ExecutionReport,
             fetched.add(_json.loads(raw).get("url", ""))
         except Exception:
             continue
+    calculated = set()
+    for call in tool_calls:
+        if call.get('tool') == 'calculate' and call.get('ok'):
+            calculated.add(_json.loads(call['arguments_json']).get('expression', ''))
 
     def issue(severity: IssueSeverity, target: str, desc: str,
               correction: str) -> AuditIssue:
@@ -94,6 +98,14 @@ def analyze_claim_support(report: ExecutionReport,
                                 "or add the missing sources with passages."))
         confirmed = [sid for sid in claim.source_ids
                      if verification.get(sid) == VerificationStatus.CONFIRMED]
+        missing_calculations = set(claim.calculation_expressions) - calculated
+        if missing_calculations:
+            issues.append(issue(IssueSeverity.MAJOR, claim.id,
+                                "Claim references calculations absent from successful tool history.",
+                                "Run each referenced expression with calculate or remove the reference."))
+        pure_calculation = (claim.classification == ClaimClassification.ESTIMATED
+                            and bool(claim.calculation_expressions)
+                            and not missing_calculations and not claim.source_ids)
         if claim.classification == ClaimClassification.VERIFIED:
             if not claim.source_ids:
                 issues.append(issue(IssueSeverity.CRITICAL, claim.id,
@@ -113,6 +125,8 @@ def analyze_claim_support(report: ExecutionReport,
                                       ClaimClassification.ESTIMATED,
                                       ClaimClassification.PARTIALLY_SUPPORTED,
                                       ClaimClassification.CONTRADICTED):
+            if pure_calculation:
+                continue
             if not claim.source_ids:
                 issues.append(issue(IssueSeverity.MAJOR, claim.id,
                                     f"Claim is classified {claim.classification.value} "
@@ -121,6 +135,11 @@ def analyze_claim_support(report: ExecutionReport,
                                     "(or, for CONTRADICTED, the contradicting "
                                     "evidence), or reclassify as "
                                     "HYPOTHETICAL/UNKNOWN."))
+            elif not confirmed:
+                issues.append(issue(IssueSeverity.MAJOR, claim.id,
+                                    "Derived or evidence-based claim has no independently confirmed source.",
+                                    "Retrieve and confirm its evidence, remove the claim, or explicitly "
+                                    "reclassify it as HYPOTHETICAL/UNKNOWN with limitations."))
         elif claim.classification == ClaimClassification.UNSUPPORTED:
             if not claim.source_ids:
                 issues.append(issue(IssueSeverity.MINOR, claim.id,

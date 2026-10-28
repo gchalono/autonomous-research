@@ -93,7 +93,8 @@ def audit_execution(client: LLMClient, model: str, objective: str,
                     verification: dict[str, VerificationStatus],
                     cost_cb=None, estimated_output_tokens: int = 1500,
                     previous_issues: list | None = None,
-                    independent_evidence: dict | None = None) -> AuditReport:
+                    independent_evidence: dict | None = None,
+                    calculation_evidence: list | None = None) -> AuditReport:
     verified = [sid for sid, st in verification.items()
                 if st == VerificationStatus.CONFIRMED]
     unverified = [sid for sid, st in verification.items()
@@ -116,5 +117,11 @@ def audit_execution(client: LLMClient, model: str, objective: str,
         import json
         user += "\nINDEPENDENTLY FETCHED SOURCE CONTEXT:\n" + wrap_tool_output(
             "audit_refetch", json.dumps(independent_evidence))
+    if calculation_evidence:
+        import json
+        user += "\nOBSERVED CALCULATOR RESULTS:\n" + wrap_tool_output(
+            "calculate", json.dumps(calculation_evidence))
+        user += ("\nCheck each calculation claim against these results. Pure arithmetic "
+                 "needs no web source, but external factual inputs still need evidence.")
     return call_agent(client, model, SYSTEM, user, AuditReport, cost_cb=cost_cb,
                       estimated_output_tokens=estimated_output_tokens)

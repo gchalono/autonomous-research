@@ -1,99 +1,131 @@
-# Bounded live validation
+# One bounded live acceptance attempt
 
-**Not yet run against live APIs for this revision.** Offline mocks demonstrate
-mechanics, not genuine research. The two earlier local runs failed; existing local
-OpenAI/Tavily connectivity does not prove the native workflow now completes.
+Current verdict: **NOT READY in the current cloud instance**. See
+[INDEPENDENT_REVIEW.md](INDEPENDENT_REVIEW.md) for the independent PR review,
+defect register, exact offline evidence and outstanding operational blockers.
+No genuine live run has succeeded on this revision, and no credits were spent.
 
-Do not run the paid commands below until you authorize their spending. Neither
-credentials in `.env` nor historical spending authorization count as approval for
-this audit. The runner refuses to start without `--authorize-paid-run`.
+## Update the existing Mac installation
 
-## Prerequisites
+Use your existing checkout, virtual environment, `.env`, projects directory and
+ledger. Stop if `git status --short` lists local edits you have not preserved;
+do not reset, clean, delete history, or merge either audit branch into main.
+From your existing `autonomous-research` directory:
 
-Use the existing checkout and virtual environment on the machine where credentials
-already work. The runner loads the repository `.env` without overwriting exported
-variables. Do not paste, print or commit credentials. Required variable names:
-`OPENAI_API_KEY`, `TAVILY_API_KEY`.
-
-Select a model currently available to those credentials and verify its current
-input/output prices and your Tavily per-search cost. The example below uses the
-repository's creator model and illustrative rates already present in its config;
-**these are not verified current availability/pricing**. Replace the model and
-rates if needed. There is no automatic model fallback in the bounded runner.
-
-Required destinations are `api.openai.com`, `api.tavily.com`, the selected official
-source (`docs.python.org` for this objective), and any search-selected source or
-redirect hosts. Use an egress allowlist on machines handling untrusted URLs. Do not
-start broad arbitrage research as this first validation attempt.
-
-## One attempt after authorization
-
-From the existing repository directory, run:
-
-```bash
-# Offline prerequisites; these make no paid calls.
-.venv/bin/python -m pytest tests/ -q
+```sh
+git status --short
+git fetch origin refs/heads/fix/independent-live-readiness:refs/remotes/origin/fix/independent-live-readiness
+git switch fix/independent-live-readiness
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt -r requirements-dev.txt
 .venv/bin/python -m pip check
-
-# Paid only when explicitly authorized. Reuse this projects root on retries:
-# changing roots resets the scope of the local cumulative ledger.
-AR_PROJECTS_ROOT=projects .venv/bin/python scripts/validate_live.py \
-  --authorize-paid-run \
-  --model gpt-5.4-mini \
-  --input-usd-per-million 0.75 \
-  --output-usd-per-million 4.50 \
-  --search-usd-per-call 0.01 \
-  --budget 1.00 \
-  --total-budget 2.00
+.venv/bin/python -m pytest tests/ -q
 ```
 
-This runs one small research project using real APIs, with one prompt revision,
-one audit correction, at most six executor turns per execution attempt, two
-independently checked sources, 4,000 output tokens per model request, 45s model
-timeouts, and a five-minute project runtime gate. All roles use the chosen model.
-Every actual provider request is preflighted, including strict-format/model
-fallbacks in the ordinary application; automatic SDK retries are disabled. Search
-charges are recorded at the supplied rate. The runner does not automatically
-resume or start another project after failure.
+Expected offline result: **155 passed, 1 skipped**. Git switch uses the existing
+local branch or creates a tracking branch when only that remote branch exists.
+Python 3.12 is the tested runtime. Retained `.env` values are loaded normally;
+exported variables take precedence. Never print or commit keys.
 
-The $1 project/$2 cumulative values bound **estimated** charges. They are not a
-hard provider billing limit: token estimates, timeout billing, discounts and
-price changes can differ. Set provider-side limits for a hard account boundary.
-Keep the existing ledger; do not delete it or change projects roots to bypass a
-cap. An existing total above $2 will prevent further requests until an explicitly
-authorized ceiling is changed.
+## Verify prerequisites without spending credits
 
-## Evidence and exit status
+OpenAI and Tavily credentials must already work securely on this Mac. Confirm
+current model authorization and Responses/native function/structured-output
+support in your provider account. Verify current prices at
+<https://openai.com/api/pricing/> and your Tavily plan. Historical repository
+prices and SDK model enums do not prove current availability or billing rates.
 
-The script prints the project id, final state, behavioral checks and ledger
-summary. It writes `projects/<ID>/live_validation.json` alongside the normal
-artifacts. Exit 0 requires all of: clean COMPLETED status, a successful search,
-page fetch and calculation, at least one independently confirmed source, and an
-existing final report. A limitations outcome, transient interruption or failed
-behavioral check exits 1. Missing authorization/credentials/invalid prices exit 2.
-No secrets are printed.
+This short check prints names/presence only and makes one free read-only fetch:
 
-Inspect without starting another paid run:
+```sh
+.venv/bin/python - <<'PY'
+import os
+from src.config import load_dotenv
+from src.tools.retrieval import fetch_url
+from scripts.validate_live import SOURCE_URL
+load_dotenv()
+missing = [n for n in ('OPENAI_API_KEY', 'TAVILY_API_KEY') if not os.environ.get(n)]
+if missing:
+    raise SystemExit('Missing configuration: ' + ', '.join(missing))
+_, text = fetch_url(SOURCE_URL)
+assert 'sole instance' in text and 'NoneType' in text
+print('Credential names present; official source fetch works. No paid request made.')
+PY
+```
 
-```bash
+If source preflight fails, fix public DNS, TLS trust, or egress on that machine;
+do not disable TLS/SSRF verification. Required API hosts are `api.openai.com`
+and `api.tavily.com`; the explicit official source is under
+`raw.githubusercontent.com`. Search-selected sources/redirects may require their
+own domain grants. The cloud instance currently lacks API credentials/grants
+and its local DNS fails despite working proxy downloads. This does not prove
+anything about the Mac's network or credentials.
+
+## Run exactly once, only after explicitly authorizing spending
+
+Set four **non-secret** shell variables to the model and prices you verified:
+`LIVE_MODEL`, `LIVE_INPUT_USD_PER_MILLION`, `LIVE_OUTPUT_USD_PER_MILLION`, and
+`LIVE_SEARCH_USD_PER_CALL`. Use conservative rates that cover your model's
+applicable billing categories. The command below deliberately refuses missing
+values. It authorizes one attempt with $1 project / $2 cumulative **estimated**
+limits; it does not authorize another run or automatic resume.
+
+```sh
+: "${LIVE_MODEL:?Set a model verified in your provider account}"
+: "${LIVE_INPUT_USD_PER_MILLION:?Set the verified input price}"
+: "${LIVE_OUTPUT_USD_PER_MILLION:?Set the verified output price}"
+: "${LIVE_SEARCH_USD_PER_CALL:?Set your Tavily query cost}"
+AR_PROJECTS_ROOT="${AR_PROJECTS_ROOT:-projects}" .venv/bin/python scripts/validate_live.py \
+  --authorize-paid-run \
+  --model "$LIVE_MODEL" \
+  --input-usd-per-million "$LIVE_INPUT_USD_PER_MILLION" \
+  --output-usd-per-million "$LIVE_OUTPUT_USD_PER_MILLION" \
+  --search-usd-per-call "$LIVE_SEARCH_USD_PER_CALL" \
+  --budget 1.00 --total-budget 2.00
+```
+
+The runner preflights the official source before any paid request. It then runs
+one real project: research the documented fact that None is the sole instance
+of NoneType and separately calculate 2 + 3 = 5. It uses one chosen model for all
+roles, no model fallback, at most 20 model request attempts and 6 dispatched
+tools across the whole project, one prompt revision, one audit correction, six
+executor turns per execution attempt, two independently checked sources,
+4,000 output tokens per model request, 45s model timeout and a five-minute
+runtime gate checked between operations. SDK retries are disabled. Format
+fallback/repair attempts count against the request cap. No stub is selected.
+
+Do not change projects roots to evade the cumulative cap. If your historical
+ledger already exceeds $2, the estimated-cost gate refuses further spending.
+Changing the ceiling needs a new explicit authorization. The estimates are
+not hard billing guarantees; configure provider-side account limits too.
+
+## Inspect results without another paid run
+
+The runner prints the project id and writes `<projects_root>/<ID>/live_validation.json`
+alongside the reports, sources, audit, run log and metadata. Inspect with:
+
+```sh
 .venv/bin/python main.py status <PROJECT_ID>
 .venv/bin/python main.py report <PROJECT_ID>
 .venv/bin/python main.py ledger
 ```
 
-Read `final_report.md`, `audit_report.json`, `sources.json`, `run_metadata.json`,
-`run_log.jsonl` and `live_validation.json`. Confirm the documented claim is actually
-supported by the independently fetched passage and that the calculation is
-correct. Compare local estimates with provider billing. A mechanically passing
-probe does not establish general research quality or production readiness.
+Keep the same `AR_PROJECTS_ROOT` for these commands if it was overridden.
+Exit 0 requires clean COMPLETED plus an approving effective audit; successful
+search; fetch of the exact official source; a linked VERIFIED None/NoneType
+claim supported by that independently confirmed source; observed calculation
+2 + 3 = 5 and a corresponding linked report claim; final report; recorded
+observed model usage; and no unhandled runner error. Unrelated approved research
+fails acceptance. Read the actual passage, claim and calculator output anyway:
+these structural checks cannot replace semantic review.
 
-Do not blindly resume via ordinary CLI defaults: the bounded runner deliberately
-uses tighter settings and explicit prices. A subsequent paid retry needs its own
-authorization and should use the same runner/ledger and verified prices. Terminal
-FAILED projects cannot resume. Native transient checkpoints remain available for
-a deliberate resume with matching settings in a separately authorized session.
-
-The older `scripts/smoke_live.py --authorize-paid-run` checks connectivity only,
-requires a positive `AR_TAVILY_COST_PER_SEARCH`, and enforces the cumulative cap.
-It is not needed before the bounded full workflow when local connectivity is
-already known, and is not proof of autonomous execution.
+Exit 1 means behavioral failure, limitations, interruption or a retained runtime
+diagnostic; exit 2 means missing authorization/configuration, invalid prices or
+failed free source preflight. A failure does not automatically start another
+project or resume. Inspect history and provider billing first. Never resume
+this bounded project through ordinary CLI defaults, which use different limits
+and prices. A retry requires separate authorization with matching settings and
+the retained ledger. Old ledger entries remain unchanged; new entries preserve
+response ids, token totals and the full usage object when observed. A remote
+call can be billed without returning usage, and a crash before local commit
+still prevents an exactly-once guarantee.

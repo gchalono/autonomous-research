@@ -1,5 +1,8 @@
 # Engineering audit and implementation
 
+This records PR #1 as originally audited. The subsequent independent review,
+corrections and current verdict are in [INDEPENDENT_REVIEW.md](INDEPENDENT_REVIEW.md).
+
 Current assessment: the native research workflow is demonstrated offline through
 revision, real tool adapter dispatch, independent verification, correction, and
 resume. Real API-backed end-to-end execution remains **unverified**. This is

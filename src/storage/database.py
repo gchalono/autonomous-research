@@ -160,13 +160,25 @@ class Store:
 
     # ------------------------------------------------------------ tooling
     def record_tool_call(self, project_id: str, tool: str, arguments: dict,
-                         ok: bool, output_preview: str, cost_usd: float = 0.0) -> None:
-        self.conn.execute(
-            "INSERT INTO tool_calls (project_id, tool, arguments_json, ok, output_preview, cost_usd, ts)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (project_id, tool, json.dumps(arguments), 1 if ok else 0,
-             output_preview[:2000], cost_usd, _now_iso()))
-        self.conn.commit()
+                         ok: bool, output_preview: str, cost_usd: float = 0.0,
+                         *, result_key: str | None = None,
+                         result_payload: dict | None = None) -> None:
+        # A completed native tool, its replayable result and project charge
+        # must survive together, even if the transcript checkpoint never lands.
+        with self.conn:
+            self.conn.execute(
+                "INSERT INTO tool_calls (project_id, tool, arguments_json, ok, output_preview, cost_usd, ts)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (project_id, tool, json.dumps(arguments), 1 if ok else 0,
+                 output_preview[:2000], cost_usd, _now_iso()))
+            self.conn.execute(
+                "UPDATE projects SET spent_usd = spent_usd + ?, updated_at = ? WHERE id = ?",
+                (cost_usd, _now_iso(), project_id))
+            if result_key is not None:
+                self.conn.execute(
+                    "INSERT INTO agent_outputs (project_id, step_key, payload_json, created_at)"
+                    " VALUES (?, ?, ?, ?)",
+                    (project_id, result_key, json.dumps(result_payload), _now_iso()))
 
     def list_tool_calls(self, project_id: str) -> list[dict]:
         rows = self.conn.execute(

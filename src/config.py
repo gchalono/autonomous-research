@@ -75,6 +75,8 @@ class Settings:
     max_prompt_revisions: int = 3
     max_corrections: int = 2
     max_tool_iterations: int = 12
+    max_tool_calls: int = 48
+    max_model_requests: int = 48
     max_sources_to_verify: int = 8
     llm_timeout_s: int = 120
     tool_timeout_s: int = 30
@@ -142,7 +144,7 @@ class Settings:
             if getattr(self, name) < 0:
                 raise ValueError(f"{name} must be nonnegative")
         for name in ("max_tool_iterations", "max_output_tokens", "llm_timeout_s",
-                     "tool_timeout_s", "estimated_output_tokens"):
+                     "tool_timeout_s", "estimated_output_tokens", "max_tool_calls", "max_model_requests"):
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name} must be positive")
 
@@ -160,6 +162,8 @@ class Settings:
             max_prompt_revisions=_env_int("AR_MAX_PROMPT_REVISIONS", 3),
             max_corrections=_env_int("AR_MAX_CORRECTIONS", 2),
             max_tool_iterations=_env_int("AR_MAX_TOOL_ITERATIONS", 12),
+            max_tool_calls=_env_int("AR_MAX_TOOL_CALLS", 48),
+            max_model_requests=_env_int("AR_MAX_MODEL_REQUESTS", 48),
             max_sources_to_verify=_env_int("AR_MAX_SOURCES_TO_VERIFY", 8),
             llm_timeout_s=_env_int("AR_LLM_TIMEOUT_S", 120),
             tool_timeout_s=_env_int("AR_TOOL_TIMEOUT_S", 30),
