@@ -1,0 +1,5 @@
+{
+  "test": "test_P02_missing_pricing",
+  "expected": "missing price prevents policy loading before dispatch",
+  "rejected_at": "production loader"
+}

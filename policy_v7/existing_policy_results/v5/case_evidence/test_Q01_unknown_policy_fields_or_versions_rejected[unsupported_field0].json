@@ -1,0 +1,7 @@
+{
+  "test": "test_Q01_unknown_policy_fields_or_versions_rejected[unsupported_field0]",
+  "expected": "strict policy loader rejects unknown fields/version",
+  "injected_fields": {
+    "unapproved_policy_field": true
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "test": "test_P06_output_limit",
+  "expected": "caller cannot override; actual guarded request capped",
+  "output_caps": [
+    100
+  ]
+}

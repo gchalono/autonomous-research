@@ -1,0 +1,5 @@
+{
+  "test": "test_P10_unknown_billing_option",
+  "expected": "unpriced operation rejected",
+  "requests": []
+}

@@ -1,0 +1,77 @@
+[
+  {
+    "name": "openai_pricing",
+    "url": "https://openai.com/api/pricing/",
+    "accessed_at": "2026-10-29T08:03:02.168675+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "openai_mini",
+    "url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+    "accessed_at": "2026-10-29T08:03:02.169543+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "openai_terra",
+    "url": "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+    "accessed_at": "2026-10-29T08:03:02.170239+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "openai_responses",
+    "url": "https://platform.openai.com/docs/api-reference/responses/create",
+    "accessed_at": "2026-10-29T08:03:02.170763+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "openai_openapi",
+    "url": "https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml",
+    "accessed_at": "2026-10-29T08:03:02.171342+00:00",
+    "authenticated": false,
+    "status": 200,
+    "final_url": "https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml",
+    "bytes": 4263976,
+    "sha256": "5029b1cd1a90bebc3ab506b40bd375f956208d08156b6eb09be593476190af8a"
+  },
+  {
+    "name": "tavily_pricing",
+    "url": "https://docs.tavily.com/documentation/api-credits",
+    "accessed_at": "2026-10-29T08:03:02.171793+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "tavily_search",
+    "url": "https://docs.tavily.com/documentation/api-reference/endpoint/search",
+    "accessed_at": "2026-10-29T08:03:02.172330+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "name": "tavily_sdk",
+    "url": "https://raw.githubusercontent.com/tavily-ai/tavily-python/main/tavily/tavily.py",
+    "accessed_at": "2026-10-29T08:03:02.173791+00:00",
+    "authenticated": false,
+    "status": 404,
+    "error": "HTTP Error 404: Not Found",
+    "response_excerpt": "404: Not Found"
+  },
+  {
+    "name": "tavily_readme",
+    "url": "https://raw.githubusercontent.com/tavily-ai/tavily-python/main/README.md",
+    "accessed_at": "2026-10-29T08:03:30.024134+00:00",
+    "authenticated": false,
+    "error": "HTTP Error 404: Not Found"
+  },
+  {
+    "name": "tavily_client",
+    "url": "https://raw.githubusercontent.com/tavily-ai/tavily-python/main/tavily/client.py",
+    "accessed_at": "2026-10-29T08:03:30.297042+00:00",
+    "authenticated": false,
+    "error": "HTTP Error 404: Not Found"
+  }
+]

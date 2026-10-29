@@ -1,0 +1,5 @@
+{
+  "test": "test_P12_missing_or_corrupt_policy",
+  "expected": "missing/corrupt file blocks without initialization",
+  "requests": []
+}

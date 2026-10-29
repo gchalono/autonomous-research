@@ -1,0 +1,5 @@
+{
+  "test": "test_P03_unknown_model",
+  "expected": "unapproved model never dispatches",
+  "requests": []
+}

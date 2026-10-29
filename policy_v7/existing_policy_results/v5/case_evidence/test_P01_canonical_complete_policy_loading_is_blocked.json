@@ -1,0 +1,6 @@
+{
+  "test": "test_P01_canonical_complete_policy_loading_is_blocked",
+  "expected": "canonical complete reviewed policy accepted in isolation",
+  "actual_draft_rejection": "draft policy cannot authorize spending",
+  "synthetic_loader": "accepted, does not validate live policy"
+}

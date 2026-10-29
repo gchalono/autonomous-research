@@ -1,0 +1,46 @@
+{
+  "expected_baseline": "e31483ee39a4fe0d46a3fb50e8225c5c99be10c2",
+  "head": "e31483ee39a4fe0d46a3fb50e8225c5c99be10c2",
+  "initial_branch": "work",
+  "working_branch": "policy-validator-repair",
+  "tracked_changes_before": [],
+  "untracked_status_entries_before": 130,
+  "untracked_files_before": 547,
+  "sdk_versions": {
+    "openai": "3.41.0",
+    "httpx2": "2.16.0",
+    "pydantic": "2.14.1",
+    "pytest": "9.2.0"
+  },
+  "effective_settings": {
+    "models": {
+      "creator": "gpt-5.4-mini",
+      "evaluator": "gpt-5.4-mini",
+      "executor": "gpt-5.6-terra",
+      "auditor": "gpt-5.6-terra"
+    },
+    "fallback": null,
+    "projects_root": "projects",
+    "llm_timeout": 120,
+    "estimated_output_tokens": 1500,
+    "tavily_cost_per_search": 0.0
+  },
+  "environment_selector_presence": {
+    "OPENAI_BASE_URL": false,
+    "OPENAI_ORG_ID": false,
+    "OPENAI_PROJECT_ID": false,
+    "AR_MODEL_CREATOR": false,
+    "AR_MODEL_EVALUATOR": false,
+    "AR_MODEL_EXECUTOR": false,
+    "AR_MODEL_AUDITOR": false,
+    "AR_MODEL_FALLBACK": false
+  },
+  "credential_presence_only": {
+    "OPENAI_API_KEY": true,
+    "TAVILY_API_KEY": true
+  },
+  "canonical_policy_exists": false,
+  "canonical_ledger_exists": false,
+  "draft_effective_digest": "79635e6c4f84a1bc733805484c835f6a7ffb2619efda2e6e3a767fc6ca3c7d3c",
+  "draft_changed_from_baseline": false
+}

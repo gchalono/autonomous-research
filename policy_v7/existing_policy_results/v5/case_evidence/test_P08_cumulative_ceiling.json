@@ -1,0 +1,37 @@
+{
+  "test": "test_P08_cumulative_ceiling",
+  "expected": "third $0.40 rejected against $1 shared allowance",
+  "snapshot": {
+    "cap_micro_usd": 1000000,
+    "budget_micro_usd": 1000000,
+    "blocked": null,
+    "integrity_error": null,
+    "financially_unresolved": false,
+    "requests": [
+      {
+        "id": "3879994550944b3bb81a4aa51d433d77",
+        "provider": "openai",
+        "model": "fixture-model",
+        "reserved_micro_usd": 400000,
+        "reported_micro_usd": 1300,
+        "usage": "{\"input_tokens\": 1, \"output_tokens\": 1, \"model\": \"fixture-model\", \"service_tier\": \"default\"}",
+        "state": "reported",
+        "experiment": "bounded-live-experiment-1",
+        "operation": "responses.create",
+        "created_at": "2026-10-29T08:06:24.774069+00:00"
+      },
+      {
+        "id": "0694f8496a9a4160b9e35819c83bf4e6",
+        "provider": "openai",
+        "model": "fixture-model",
+        "reserved_micro_usd": 400000,
+        "reported_micro_usd": 1300,
+        "usage": "{\"input_tokens\": 1, \"output_tokens\": 1, \"model\": \"fixture-model\", \"service_tier\": \"default\"}",
+        "state": "reported",
+        "experiment": "bounded-live-experiment-1",
+        "operation": "responses.create",
+        "created_at": "2026-10-29T08:06:24.775928+00:00"
+      }
+    ]
+  }
+}

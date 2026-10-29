@@ -1,0 +1,29 @@
+{
+  "new_authored_file_whitespace_checks": [
+    {
+      "file": "FINAL_PROVIDER_VERIFICATION.md",
+      "exit": 1,
+      "output": ""
+    },
+    {
+      "file": "FINAL_BUDGET_POLICY.md",
+      "exit": 1,
+      "output": ""
+    },
+    {
+      "file": "LIVE_TEST_AUTHORIZATION_CHECKLIST.md",
+      "exit": 1,
+      "output": ""
+    },
+    {
+      "file": "policy_v7/test_v7_policy.py",
+      "exit": 1,
+      "output": ""
+    }
+  ],
+  "production_changes": false,
+  "canonical_policy_exists": false,
+  "canonical_ledger_exists": false,
+  "commit_created": false,
+  "push_performed": false
+}

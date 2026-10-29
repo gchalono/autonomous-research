@@ -1,0 +1,26 @@
+{
+  "test": "test_P07_retry_after_unknown_completion",
+  "expected": "ambiguous outcome retains exposure; retry denied",
+  "calls": 1,
+  "snapshot": {
+    "cap_micro_usd": 1000000,
+    "budget_micro_usd": 1000000,
+    "blocked": "provider exception: TimeoutError",
+    "integrity_error": null,
+    "financially_unresolved": true,
+    "requests": [
+      {
+        "id": "9a5e58969d06493e854163cb0b6b6fcd",
+        "provider": "openai",
+        "model": "fixture-model",
+        "reserved_micro_usd": 400000,
+        "reported_micro_usd": null,
+        "usage": "null",
+        "state": "uncertain",
+        "experiment": "bounded-live-experiment-1",
+        "operation": "responses.create",
+        "created_at": "2026-10-29T08:06:24.768188+00:00"
+      }
+    ]
+  }
+}

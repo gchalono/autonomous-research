@@ -1,0 +1,303 @@
+Source: https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml
+Full retrieval SHA256: 5029b1cd1a90bebc3ab506b40bd375f956208d08156b6eb09be593476190af8a
+
+21625:   /responses:
+21626:     post:
+21627:       operationId: createResponse
+21628:       tags:
+21629:         - Responses
+21630:       summary: Create a model response
+21631:       description: >
+21632:         Creates a model response. Provide
+21633:         [text](https://developers.openai.com/api/docs/guides/text) or
+21634: 
+21635:         [image](https://developers.openai.com/api/docs/guides/images-vision)
+21636:         inputs to generate
+21637:         [text](https://developers.openai.com/api/docs/guides/text)
+21638: 
+21639:         or
+21640:         [JSON](https://developers.openai.com/api/docs/guides/structured-outputs)
+21641:         outputs. Have the model call
+21642: 
+21643:         your own [custom
+21644:         code](https://developers.openai.com/api/docs/guides/function-calling) or
+21645:         use built-in
+21646: 
+21647:         [tools](https://developers.openai.com/api/docs/guides/tools) like [web
+21648:         search](https://developers.openai.com/api/docs/guides/tools-web-search)
+21649: 
+21650:         or [file
+21651:         search](https://developers.openai.com/api/docs/guides/tools-file-search)
+21652:         to use your own data
+21653: 
+21654:         as input for the model's response.
+21655:       requestBody:
+21656:         required: true
+21657:         content:
+21658:           application/json:
+21659:             schema:
+21660:               $ref: "#/components/schemas/CreateResponse"
+21661:       responses:
+21662:         "200":
+21663:           description: OK
+21664:           content:
+21665:             application/json:
+21666:               schema:
+21667:                 $ref: "#/components/schemas/Response"
+21668:             text/event-stream:
+21669:               schema:
+21670:                 $ref: "#/components/schemas/ResponseStreamEvent"
+21671:         "400":
+21672:           description: Invalid response request or incompatible request parameters.
+21673:           content:
+21674:             application/json:
+21675:               schema:
+21676:                 $ref: "#/components/schemas/ErrorResponse"
+21677:         "404":
+21678:           description: The requested model or a referenced resource was not found or is
+21679:             unavailable to this caller.
+21680:           content:
+21681:             application/json:
+21682:               schema:
+21683:                 $ref: "#/components/schemas/ErrorResponse"
+21684:         "429":
+21685:           $ref: "#/components/responses/InferenceRateLimited"
+21686:         "503":
+21687:           $ref: "#/components/responses/InferenceServiceUnavailable"
+21688:       x-oaiMeta:
+21689:         group: responses
+21690:         path: create
+
+48759:     CreateResponse:
+48760:       allOf:
+48761:         - $ref: "#/components/schemas/CreateModelResponseProperties"
+48762:         - $ref: "#/components/schemas/ResponseProperties"
+48763:         - type: object
+48764:           properties:
+48765:             access_programs:
+48766:               $ref: "#/components/schemas/AccessProgramsParam"
+48767:             prompt_cache_options:
+48768:               $ref: "#/components/schemas/ResponsePromptCacheOptionsParam"
+48769:             service_tier:
+48770:               $ref: "#/components/schemas/ServiceTierResponses"
+48771:             truncation:
+48772:               deprecated: true
+48773:               anyOf:
+48774:                 - type: string
+48775:                   description: >
+48776:                     The truncation strategy to use for the model response.
+48777: 
+48778:                     - `auto`: If the input to this Response exceeds
+48779:                       the model's context window size, the model will truncate the
+48780:                       response to fit the context window by dropping items from the beginning of the conversation.
+48781:                     - `disabled` (default): If the input size will exceed the
+48782:                     context window
+48783:                       size for a model, the request will fail with a 400 error.
+48784:                   enum:
+48785:                     - auto
+48786:                     - disabled
+48787:                   default: disabled
+48788:                 - type: "null"
+48789:             reasoning:
+48790:               anyOf:
+
+48898:             max_output_tokens:
+48899:               anyOf:
+48900:                 - description: |
+48901:                     An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](https://developers.openai.com/api/docs/guides/reasoning).
+48902:                   type: integer
+48903:                   minimum: 16
+48904:                 - type: "null"
+48905:     CreateRunRequest:
+48906:       type: object
+48907:       additionalProperties: false
+
+57800:     ModelIdsResponses:
+57801:       example: gpt-6-astra
+57802:       anyOf:
+57803:         - $ref: "#/components/schemas/ModelIdsShared"
+57804:         - type: string
+57805:           title: ResponsesOnlyModel
+57806:           enum:
+57807:             - o1-pro
+57808:             - o1-pro-2025-03-19
+
+57884:     ModelIdsShared:
+57885:       example: gpt-6-astra
+57886:       anyOf:
+57887:         - type: string
+57888:         - type: string
+57889:           enum:
+57890:             - gpt-6-astra
+57891:             - gpt-6.1-sol
+57892:             - gpt-6.1-terra
+57893:             - gpt-6-sol
+57894:             - gpt-6-luna
+57895:             - gpt-5.6-sol
+57896:             - gpt-5.6-terra
+57897:             - gpt-5.6-luna
+57898:             - gpt-5.5
+57899:             - gpt-5.5-2026-04-23
+57900:             - gpt-5.4
+57901:             - gpt-5.4-mini
+57902:             - gpt-5.4-nano
+57903:             - gpt-5.4-mini-2026-03-17
+57904:             - gpt-5.4-nano-2026-03-17
+57905:             - gpt-5.3-chat-latest
+
+73984:     ResponseProperties:
+73985:       type: object
+73986:       properties:
+73987:         previous_response_id:
+73988:           anyOf:
+73989:             - type: string
+73990:               description: |
+73991:                 The unique ID of the previous response to the model. Use this to
+73992:                 create multi-turn conversations. Learn more about
+73993:                 [conversation state](https://developers.openai.com/api/docs/guides/conversation-state). Cannot be used in conjunction with `conversation`.
+73994:             - type: "null"
+73995:         model:
+73996:           description: >
+73997:             Model ID used to generate the response, like `gpt-6-astra`. OpenAI
+73998: 
+73999:             offers a wide range of models with different capabilities,
+74000:             performance
+74001: 
+74002:             characteristics, and price points. Refer to the [model
+74003:             guide](https://developers.openai.com/api/docs/models)
+74004: 
+74005:             to browse and compare available models.
+74006:           $ref: "#/components/schemas/ModelIdsResponses"
+74007:         background:
+74008:           anyOf:
+74009:             - type: boolean
+74010:               description: >
+74011:                 Whether to run the model response in the background.
+74012: 
+
+75387:     ResponseUsage:
+75388:       type: object
+75389:       description: |
+75390:         Represents token usage details including input tokens, output tokens,
+75391:         a breakdown of output tokens, and the total tokens used.
+75392:       properties:
+75393:         input_tokens:
+75394:           type: integer
+75395:           description: The number of input tokens.
+75396:         input_tokens_details:
+75397:           type: object
+75398:           description: A detailed breakdown of the input tokens.
+75399:           properties:
+75400:             cached_tokens:
+75401:               type: integer
+75402:               description: |
+75403:                 The number of tokens that were retrieved from the cache.
+75404:                 [More on prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching).
+75405:             cache_write_tokens:
+75406:               type: integer
+75407:               description: The number of input tokens that were written to the cache.
+75408:           required:
+75409:             - cached_tokens
+75410:             - cache_write_tokens
+75411:         output_tokens:
+75412:           type: integer
+75413:           description: The number of output tokens.
+75414:         output_tokens_details:
+75415:           type: object
+75416:           description: A detailed breakdown of the output tokens.
+75417:           properties:
+75418:             reasoning_tokens:
+75419:               type: integer
+75420:               description: The number of reasoning tokens.
+75421:           required:
+75422:             - reasoning_tokens
+75423:         total_tokens:
+75424:           type: integer
+75425:           description: The total number of tokens used.
+75426:       required:
+75427:         - input_tokens
+75428:         - input_tokens_details
+75429:         - output_tokens
+75430:         - output_tokens_details
+75431:         - total_tokens
+75432:     ResponseWebSearchCallCompletedEvent:
+75433:       type: object
+75434:       description: Emitted when a web search call is completed.
+75435:       properties:
+75436:         type:
+
+78292:     ServiceTierResponses:
+78293:       anyOf:
+78294:         - type: string
+78295:           description: >
+78296:             Specifies the processing type used for serving the request.
+78297:               - If set to 'auto', then the request will be processed with the service tier configured in the Project settings. Unless otherwise configured, the Project will use 'default'.
+78298:               - If set to 'default', then the request will be processed with the standard pricing and performance for the selected model.
+78299:               - If set to '[flex](https://developers.openai.com/api/docs/guides/flex-processing)', then the request will be processed with the Flex Processing service tier.
+78300:               - To opt-in to [Fast mode](https://developers.openai.com/api/docs/guides/fast-mode) at the request level, include the `service_tier=fast` or `service_tier=priority` parameter for Responses or Chat Completions. The response will show `service_tier=priority` regardless of if you specify `service_tier=fast` or `priority` in your request.
+78301:               - If set to 'ultrafast', then the request will be processed with the access-controlled Ultrafast Processing service tier. This tier is currently available for `gpt-5.6-sol`; a response served through it will show `service_tier=ultrafast`.
+78302:               - When not set, the default behavior is 'auto'.
+78303: 
+78304:               When the `service_tier` parameter is set, the response body will include the `service_tier` value based on the processing mode actually used to serve the request. This response value may be different from the value set in the parameter.
+78305:           enum:
+78306:             - auto
+78307:             - default
+78308:             - flex
+78309:             - scale
+78310:             - priority
+78311:             - fast
+78312:             - ultrafast
+78313:           default: auto
+78314:         - type: "null"
+78315:     SpeechAudioDeltaEvent:
+78316:       type: object
+78317:       description: Emitted for each chunk of audio data generated during speech synthesis.
+78318:       properties:
+
+89130:     ResponsePromptCacheOptionsParam:
+89131:       properties:
+89132:         ttl:
+89133:           $ref: "#/components/schemas/PromptCacheTTLEnum"
+89134:           description: The minimum lifetime applied to every implicit and explicit cache
+89135:             breakpoint written by the request. Defaults to `30m`, which is
+89136:             currently the only supported value. The backend may retain cache
+89137:             entries for longer.
+89138:         mode:
+89139:           $ref: "#/components/schemas/PromptCacheModeEnum"
+89140:           description: Controls whether OpenAI automatically creates an implicit cache
+89141:             breakpoint. Defaults to `implicit`. With `implicit`, OpenAI creates
+89142:             one implicit breakpoint and writes up to the latest three explicit
+89143:             breakpoints in the request. With `explicit`, OpenAI does not create
+89144:             an implicit breakpoint and writes up to the latest four explicit
+89145:             breakpoints. If there are no explicit breakpoints, the request does
+89146:             not use prompt caching.
+89147:         prewarm:
+89148:           type: boolean
+89149:           description: Prepares the prompt cache without generating output. Defaults to
+89150:             `false`. When set to `true`, overrides the `generate` field to
+89151:             `false`.
+89152:         comparison_response_id:
+89153:           anyOf:
+89154:             - type: string
+89155:               description: The ID of a response to compare when diagnosing prompt cache reuse.
+89156:                 Supplying this field requests prompt cache diagnostics when the
+89157:                 feature is enabled.
+89158:               example: resp_123
+89159:             - type: "null"
+89160:       type: object
+89161:       required: []
+89162:       title: Prompt cache options
+89163:       description: Options for prompt caching. Supported for `gpt-5.6` and later
+89164:         models. By default, OpenAI automatically chooses one implicit cache
+89165:         breakpoint. You can add explicit breakpoints to content blocks with
+89166:         `prompt_cache_breakpoint`. Each request can write up to four
+89167:         breakpoints. For cache matching, OpenAI considers up to the latest 80
+89168:         breakpoints in the conversation, without a content-block lookback limit.
+89169:         Set `mode` to `explicit` to disable the implicit breakpoint. The `ttl`
+89170:         defaults to `30m`, which is currently the only supported value. See the
+89171:         [prompt caching
+89172:         guide](https://developers.openai.com/api/docs/guides/prompt-caching) for
+89173:         current details.
+89174:     ReasoningModeEnum:
+89175:       anyOf:
+89176:         - type: string

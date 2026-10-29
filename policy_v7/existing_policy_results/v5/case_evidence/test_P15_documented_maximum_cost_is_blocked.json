@@ -1,0 +1,9 @@
+{
+  "test": "test_P15_documented_maximum_cost_is_blocked",
+  "expected": "each production maximum covers documented official bound",
+  "synthetic_arithmetic_micro_usd": [
+    400000,
+    100000
+  ],
+  "official_production_bounds": "unavailable"
+}
