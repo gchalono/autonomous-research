@@ -1,0 +1,1645 @@
+{
+  "$defs": {
+    "Abstention": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "report_id": {
+          "title": "Report Id",
+          "type": "string"
+        },
+        "action": {
+          "enum": [
+            "answer",
+            "abstain"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "rationale": {
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "report_id",
+        "action",
+        "rationale"
+      ],
+      "title": "Abstention",
+      "type": "object"
+    },
+    "Annotation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "synthetic_developer",
+            "independent_human",
+            "unverified"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "annotator": {
+          "minLength": 1,
+          "title": "Annotator",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "final",
+            "provisional",
+            "disputed",
+            "unresolved",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "notes": {
+          "title": "Notes",
+          "type": "string"
+        },
+        "claim_id": {
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "truth": {
+          "enum": [
+            "correct",
+            "incorrect",
+            "partially_correct",
+            "indeterminate",
+            "not_evaluated"
+          ],
+          "title": "Truth",
+          "type": "string"
+        },
+        "support": {
+          "enum": [
+            "fully_supported",
+            "partially_supported",
+            "unsupported",
+            "contradicted",
+            "unverifiable",
+            "missing_citation"
+          ],
+          "title": "Support",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "origin",
+        "annotator",
+        "status",
+        "notes",
+        "claim_id",
+        "truth",
+        "support"
+      ],
+      "title": "Annotation",
+      "type": "object"
+    },
+    "Auditor": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "report_id": {
+          "title": "Report Id",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "approve",
+            "corrections_required",
+            "inconclusive",
+            "blocked"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "accepted_claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Accepted Claim Ids",
+          "type": "array"
+        },
+        "issues": {
+          "items": {
+            "$ref": "#/$defs/Issue"
+          },
+          "title": "Issues",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "report_id",
+        "decision",
+        "accepted_claim_ids",
+        "issues"
+      ],
+      "title": "Auditor",
+      "type": "object"
+    },
+    "Citation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "engine_source_id": {
+          "title": "Engine Source Id",
+          "type": "string"
+        },
+        "claim_id": {
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "passage_id": {
+          "title": "Passage Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "engine_source_id",
+        "claim_id",
+        "passage_id"
+      ],
+      "title": "Citation",
+      "type": "object"
+    },
+    "Claim": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "report_id": {
+          "title": "Report Id",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "additional_locations": {
+          "items": {
+            "$ref": "#/$defs/ClaimLocation"
+          },
+          "title": "Additional Locations",
+          "type": "array"
+        },
+        "engine_claim_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Engine Claim Id"
+        },
+        "proposition_key": {
+          "minLength": 1,
+          "title": "Proposition Key",
+          "type": "string"
+        },
+        "atomic_propositions": {
+          "maximum": 1,
+          "minimum": 1,
+          "title": "Atomic Propositions",
+          "type": "integer"
+        },
+        "materiality": {
+          "enum": [
+            "critical",
+            "material",
+            "minor",
+            "not_applicable"
+          ],
+          "title": "Materiality",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "report_id",
+        "text",
+        "start",
+        "end",
+        "additional_locations",
+        "engine_claim_id",
+        "proposition_key",
+        "atomic_propositions",
+        "materiality"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "ClaimLocation": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "ClaimLocation",
+      "type": "object"
+    },
+    "Contradiction": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "passage_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Passage Ids",
+          "type": "array"
+        },
+        "materiality": {
+          "enum": [
+            "critical",
+            "material",
+            "minor",
+            "not_applicable"
+          ],
+          "title": "Materiality",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "task_id",
+        "passage_ids",
+        "materiality",
+        "description"
+      ],
+      "title": "Contradiction",
+      "type": "object"
+    },
+    "ContradictionJudgment": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "synthetic_developer",
+            "independent_human",
+            "unverified"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "annotator": {
+          "minLength": 1,
+          "title": "Annotator",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "final",
+            "provisional",
+            "disputed",
+            "unresolved",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "notes": {
+          "title": "Notes",
+          "type": "string"
+        },
+        "report_id": {
+          "title": "Report Id",
+          "type": "string"
+        },
+        "contradiction_id": {
+          "title": "Contradiction Id",
+          "type": "string"
+        },
+        "identified": {
+          "title": "Identified",
+          "type": "boolean"
+        },
+        "accurate": {
+          "title": "Accurate",
+          "type": "boolean"
+        },
+        "addressed": {
+          "title": "Addressed",
+          "type": "boolean"
+        },
+        "reflected": {
+          "title": "Reflected",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "origin",
+        "annotator",
+        "status",
+        "notes",
+        "report_id",
+        "contradiction_id",
+        "identified",
+        "accurate",
+        "addressed",
+        "reflected"
+      ],
+      "title": "ContradictionJudgment",
+      "type": "object"
+    },
+    "Issue": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "critical",
+            "material",
+            "minor",
+            "not_applicable"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "open",
+            "in_progress",
+            "resolved",
+            "unresolved",
+            "superseded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "severity",
+        "status",
+        "description"
+      ],
+      "title": "Issue",
+      "type": "object"
+    },
+    "NumericalJudgment": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "synthetic_developer",
+            "independent_human",
+            "unverified"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "annotator": {
+          "minLength": 1,
+          "title": "Annotator",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "final",
+            "provisional",
+            "disputed",
+            "unresolved",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "notes": {
+          "title": "Notes",
+          "type": "string"
+        },
+        "report_id": {
+          "title": "Report Id",
+          "type": "string"
+        },
+        "numerical_reference_id": {
+          "title": "Numerical Reference Id",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "origin",
+        "annotator",
+        "status",
+        "notes",
+        "report_id",
+        "numerical_reference_id",
+        "value",
+        "unit"
+      ],
+      "title": "NumericalJudgment",
+      "type": "object"
+    },
+    "NumericalReference": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "expression": {
+          "title": "Expression",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "undefined": {
+          "title": "Undefined",
+          "type": "boolean"
+        },
+        "unit": {
+          "minLength": 1,
+          "title": "Unit",
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "exact",
+            "absolute",
+            "relative"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "tolerance": {
+          "title": "Tolerance",
+          "type": "string"
+        },
+        "rounding_places": {
+          "anyOf": [
+            {
+              "maximum": 20,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rounding Places"
+        }
+      },
+      "required": [
+        "id",
+        "task_id",
+        "expression",
+        "value",
+        "undefined",
+        "unit",
+        "mode",
+        "tolerance"
+      ],
+      "title": "NumericalReference",
+      "type": "object"
+    },
+    "Passage": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "source_id",
+        "start",
+        "end",
+        "text"
+      ],
+      "title": "Passage",
+      "type": "object"
+    },
+    "QuestionJudgment": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "synthetic_developer",
+            "independent_human",
+            "unverified"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "annotator": {
+          "minLength": 1,
+          "title": "Annotator",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "final",
+            "provisional",
+            "disputed",
+            "unresolved",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "notes": {
+          "title": "Notes",
+          "type": "string"
+        },
+        "report_id": {
+          "title": "Report Id",
+          "type": "string"
+        },
+        "subquestion_id": {
+          "title": "Subquestion Id",
+          "type": "string"
+        },
+        "coverage": {
+          "enum": [
+            "full",
+            "partial",
+            "missing",
+            "unresolved"
+          ],
+          "title": "Coverage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "origin",
+        "annotator",
+        "status",
+        "notes",
+        "report_id",
+        "subquestion_id",
+        "coverage"
+      ],
+      "title": "QuestionJudgment",
+      "type": "object"
+    },
+    "Reference": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "answer": {
+          "title": "Answer",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "synthetic_developer",
+            "independent_human",
+            "unverified"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "annotators": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Annotators",
+          "type": "array"
+        },
+        "blinded_to_engine": {
+          "title": "Blinded To Engine",
+          "type": "boolean"
+        },
+        "blinded_to_auditor": {
+          "title": "Blinded To Auditor",
+          "type": "boolean"
+        },
+        "disagreements": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Disagreements",
+          "type": "array"
+        },
+        "adjudication_notes": {
+          "title": "Adjudication Notes",
+          "type": "string"
+        },
+        "label_version": {
+          "title": "Label Version",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "final",
+            "provisional",
+            "disputed",
+            "unresolved",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "expected_action": {
+          "enum": [
+            "answer",
+            "abstain"
+          ],
+          "title": "Expected Action",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "task_id",
+        "answer",
+        "origin",
+        "annotators",
+        "blinded_to_engine",
+        "blinded_to_auditor",
+        "disagreements",
+        "adjudication_notes",
+        "label_version",
+        "status",
+        "expected_action"
+      ],
+      "title": "Reference",
+      "type": "object"
+    },
+    "RelationAnnotation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "synthetic_developer",
+            "independent_human",
+            "unverified"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "annotator": {
+          "minLength": 1,
+          "title": "Annotator",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "final",
+            "provisional",
+            "disputed",
+            "unresolved",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "notes": {
+          "title": "Notes",
+          "type": "string"
+        },
+        "citation_id": {
+          "title": "Citation Id",
+          "type": "string"
+        },
+        "support": {
+          "enum": [
+            "fully_supported",
+            "partially_supported",
+            "unsupported",
+            "contradicted",
+            "unverifiable",
+            "missing_citation"
+          ],
+          "title": "Support",
+          "type": "string"
+        },
+        "attribution": {
+          "enum": [
+            "correct_source_and_passage",
+            "correct_source_wrong_passage",
+            "wrong_source",
+            "invalid_reference",
+            "no_reference"
+          ],
+          "title": "Attribution",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "origin",
+        "annotator",
+        "status",
+        "notes",
+        "citation_id",
+        "support",
+        "attribution"
+      ],
+      "title": "RelationAnnotation",
+      "type": "object"
+    },
+    "Report": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "engine_payload": {
+          "additionalProperties": true,
+          "title": "Engine Payload",
+          "type": "object"
+        },
+        "candidate_version": {
+          "title": "Candidate Version",
+          "type": "string"
+        },
+        "all_claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "All Claim Ids",
+          "type": "array"
+        },
+        "submitted_claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Submitted Claim Ids",
+          "type": "array"
+        },
+        "excluded_engine_claims": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Excluded Engine Claims",
+          "type": "object"
+        },
+        "inventory_complete": {
+          "title": "Inventory Complete",
+          "type": "boolean"
+        },
+        "inventory_reviewer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Inventory Reviewer"
+        },
+        "inventory_method": {
+          "title": "Inventory Method",
+          "type": "string"
+        },
+        "segments": {
+          "items": {
+            "$ref": "#/$defs/Segment"
+          },
+          "title": "Segments",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "task_id",
+        "text",
+        "engine_payload",
+        "candidate_version",
+        "all_claim_ids",
+        "submitted_claim_ids",
+        "excluded_engine_claims",
+        "inventory_complete",
+        "inventory_reviewer",
+        "inventory_method",
+        "segments"
+      ],
+      "title": "Report",
+      "type": "object"
+    },
+    "ReportJudgment": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "synthetic_developer",
+            "independent_human",
+            "unverified"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "annotator": {
+          "minLength": 1,
+          "title": "Annotator",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "final",
+            "provisional",
+            "disputed",
+            "unresolved",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "notes": {
+          "title": "Notes",
+          "type": "string"
+        },
+        "report_id": {
+          "title": "Report Id",
+          "type": "string"
+        },
+        "defect": {
+          "enum": [
+            "defective",
+            "clean",
+            "unresolved"
+          ],
+          "title": "Defect",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "origin",
+        "annotator",
+        "status",
+        "notes",
+        "report_id",
+        "defect"
+      ],
+      "title": "ReportJudgment",
+      "type": "object"
+    },
+    "Segment": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "minimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "kind": {
+          "enum": [
+            "factual",
+            "nonfactual"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "claim_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Claim Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "kind",
+        "claim_ids"
+      ],
+      "title": "Segment",
+      "type": "object"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "source_type": {
+          "title": "Source Type",
+          "type": "string"
+        },
+        "captured_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Captured At"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "encoding": {
+          "const": "utf-8",
+          "title": "Encoding",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "synthetic_developer",
+            "independent_human",
+            "unverified"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "provenance": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Provenance",
+          "type": "object"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "source_type",
+        "captured_at",
+        "content",
+        "sha256",
+        "encoding",
+        "origin",
+        "provenance",
+        "limitations"
+      ],
+      "title": "Source",
+      "type": "object"
+    },
+    "Subquestion": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "title": "Subquestion",
+      "type": "object"
+    },
+    "Task": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "objective": {
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "domain": {
+          "minLength": 1,
+          "title": "Domain",
+          "type": "string"
+        },
+        "subquestions": {
+          "items": {
+            "$ref": "#/$defs/Subquestion"
+          },
+          "title": "Subquestions",
+          "type": "array"
+        },
+        "evidence_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Types",
+          "type": "array"
+        },
+        "temporal_assumptions": {
+          "title": "Temporal Assumptions",
+          "type": "string"
+        },
+        "source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "rubric": {
+          "title": "Rubric",
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "objective",
+        "domain",
+        "subquestions",
+        "evidence_types",
+        "temporal_assumptions",
+        "source_ids",
+        "rubric",
+        "limitations"
+      ],
+      "title": "Task",
+      "type": "object"
+    },
+    "Trace": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "report_id": {
+          "title": "Report Id",
+          "type": "string"
+        },
+        "model_calls": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Model Calls"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Output Tokens"
+        },
+        "reasoning_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Reasoning Tokens"
+        },
+        "tool_calls": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Tool Calls"
+        },
+        "actual_cost_usd": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Actual Cost Usd"
+        },
+        "estimated_cost_usd": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Estimated Cost Usd"
+        },
+        "latency_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Latency Seconds"
+        },
+        "retries": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Retries"
+        },
+        "failures": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Failures"
+        },
+        "human_interventions": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Human Interventions"
+        },
+        "context_truncations": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Context Truncations"
+        },
+        "missing_evidence": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Missing Evidence"
+        },
+        "terminal_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Terminal Status"
+        }
+      },
+      "required": [
+        "id",
+        "report_id",
+        "model_calls",
+        "input_tokens",
+        "output_tokens",
+        "reasoning_tokens",
+        "tool_calls",
+        "actual_cost_usd",
+        "estimated_cost_usd",
+        "latency_seconds",
+        "retries",
+        "failures",
+        "human_interventions",
+        "context_truncations",
+        "missing_evidence",
+        "terminal_status"
+      ],
+      "title": "Trace",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "v17a.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "dataset_version": {
+      "minLength": 1,
+      "title": "Dataset Version",
+      "type": "string"
+    },
+    "manifest_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Manifest Sha256",
+      "type": "string"
+    },
+    "tasks": {
+      "items": {
+        "$ref": "#/$defs/Task"
+      },
+      "minItems": 1,
+      "title": "Tasks",
+      "type": "array"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/Source"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "passages": {
+      "items": {
+        "$ref": "#/$defs/Passage"
+      },
+      "title": "Passages",
+      "type": "array"
+    },
+    "references": {
+      "items": {
+        "$ref": "#/$defs/Reference"
+      },
+      "title": "References",
+      "type": "array"
+    },
+    "reports": {
+      "items": {
+        "$ref": "#/$defs/Report"
+      },
+      "minItems": 1,
+      "title": "Reports",
+      "type": "array"
+    },
+    "claims": {
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "title": "Claims",
+      "type": "array"
+    },
+    "citations": {
+      "items": {
+        "$ref": "#/$defs/Citation"
+      },
+      "title": "Citations",
+      "type": "array"
+    },
+    "annotations": {
+      "items": {
+        "$ref": "#/$defs/Annotation"
+      },
+      "title": "Annotations",
+      "type": "array"
+    },
+    "relations": {
+      "items": {
+        "$ref": "#/$defs/RelationAnnotation"
+      },
+      "title": "Relations",
+      "type": "array"
+    },
+    "questions": {
+      "items": {
+        "$ref": "#/$defs/QuestionJudgment"
+      },
+      "title": "Questions",
+      "type": "array"
+    },
+    "contradictions": {
+      "items": {
+        "$ref": "#/$defs/Contradiction"
+      },
+      "title": "Contradictions",
+      "type": "array"
+    },
+    "contradiction_judgments": {
+      "items": {
+        "$ref": "#/$defs/ContradictionJudgment"
+      },
+      "title": "Contradiction Judgments",
+      "type": "array"
+    },
+    "numerics": {
+      "items": {
+        "$ref": "#/$defs/NumericalReference"
+      },
+      "title": "Numerics",
+      "type": "array"
+    },
+    "numerical_judgments": {
+      "items": {
+        "$ref": "#/$defs/NumericalJudgment"
+      },
+      "title": "Numerical Judgments",
+      "type": "array"
+    },
+    "abstentions": {
+      "items": {
+        "$ref": "#/$defs/Abstention"
+      },
+      "title": "Abstentions",
+      "type": "array"
+    },
+    "auditors": {
+      "items": {
+        "$ref": "#/$defs/Auditor"
+      },
+      "title": "Auditors",
+      "type": "array"
+    },
+    "report_judgments": {
+      "items": {
+        "$ref": "#/$defs/ReportJudgment"
+      },
+      "title": "Report Judgments",
+      "type": "array"
+    },
+    "traces": {
+      "items": {
+        "$ref": "#/$defs/Trace"
+      },
+      "title": "Traces",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "dataset_version",
+    "manifest_sha256",
+    "tasks",
+    "sources",
+    "passages",
+    "references",
+    "reports",
+    "claims",
+    "citations",
+    "annotations",
+    "relations",
+    "questions",
+    "contradictions",
+    "contradiction_judgments",
+    "numerics",
+    "numerical_judgments",
+    "abstentions",
+    "auditors",
+    "report_judgments",
+    "traces"
+  ],
+  "title": "Dataset",
+  "type": "object"
+}

@@ -1,0 +1,334 @@
+{
+  "E01": {
+    "state": "valid",
+    "metrics": {
+      "factual_correctness": [
+        1,
+        1
+      ],
+      "claim_support": [
+        1,
+        1
+      ],
+      "citation_precision": [
+        1,
+        1
+      ]
+    },
+    "reason": "One true atomic claim and one correctly anchored supporting relation."
+  },
+  "E02": {
+    "state": "valid",
+    "metrics": {
+      "factual_correctness": [
+        1,
+        1
+      ],
+      "claim_support": [
+        0,
+        1
+      ],
+      "citation_precision": [
+        0,
+        1
+      ]
+    },
+    "reason": "Truth stays correct but unrelated evidence gives zero support."
+  },
+  "E03": {
+    "state": "valid",
+    "metrics": {
+      "factual_correctness": [
+        0,
+        1
+      ],
+      "claim_support": [
+        0,
+        1
+      ]
+    },
+    "reason": "False count cites a real passage; passage existence is not truth."
+  },
+  "E04": {
+    "state": "invalid_input",
+    "metrics": {},
+    "reason": "Fabricated continuation differs from full frozen source slice, despite genuine prefix."
+  },
+  "E05": {
+    "state": "valid",
+    "metrics": {
+      "claim_support": [
+        0,
+        1
+      ],
+      "citation_precision": [
+        0,
+        1
+      ]
+    },
+    "reason": "Wrong-source attribution is not supporting evidence."
+  },
+  "E06": {
+    "state": "valid",
+    "metrics": {
+      "claim_support": [
+        0,
+        1
+      ]
+    },
+    "reason": "A genuine different passage from the same source does not support enrollment."
+  },
+  "E07": {
+    "state": "valid",
+    "metrics": {
+      "factual_correctness": [
+        0,
+        1
+      ],
+      "claim_support": [
+        0,
+        1
+      ]
+    },
+    "reason": "Cited source contradicts the false count."
+  },
+  "E08": {
+    "state": "valid",
+    "metrics": {
+      "claim_support": [
+        0,
+        1
+      ],
+      "citation_precision": [
+        0,
+        1
+      ]
+    },
+    "reason": "Partial support receives no full credit."
+  },
+  "E09": {
+    "state": "valid",
+    "metrics": {
+      "claim_support": [
+        0,
+        1
+      ],
+      "citation_presence": [
+        0,
+        1
+      ]
+    },
+    "reason": "Missing citation remains an inventoried unsupported claim."
+  },
+  "E10": {
+    "state": "valid",
+    "metrics": {
+      "citation_precision": [
+        0,
+        0
+      ],
+      "citation_coverage": [
+        0,
+        1
+      ]
+    },
+    "reason": "Zero relations gives undefined precision, zero adequate citation coverage."
+  },
+  "E11": {
+    "state": "insufficient_adjudication",
+    "metrics": {
+      "factual_correctness": [
+        0,
+        0
+      ],
+      "claim_support": [
+        0,
+        0
+      ]
+    },
+    "reason": "An empty report is not a perfect report; reference gold unresolved."
+  },
+  "E12": {
+    "state": "insufficient_adjudication",
+    "metrics": {
+      "claim_support": [
+        0,
+        1
+      ],
+      "adjudication_coverage": [
+        0,
+        1
+      ],
+      "annotation_coverage": [
+        0,
+        1
+      ]
+    },
+    "reason": "Omitted annotation stays in inventory denominators."
+  },
+  "E13": {
+    "state": "valid",
+    "metrics": {
+      "unnecessary_abstention": [
+        1,
+        1
+      ],
+      "substantive_success": [
+        0,
+        1
+      ]
+    },
+    "reason": "Answerable reference plus abstention is unnecessary abstention."
+  },
+  "E14": {
+    "state": "valid",
+    "metrics": {
+      "correct_abstention": [
+        1,
+        1
+      ],
+      "substantive_success": [
+        0,
+        0
+      ]
+    },
+    "reason": "Unanswerable reference plus abstention is correct, not substantive success."
+  },
+  "E15": {
+    "state": "valid",
+    "metrics": {
+      "numerical_correctness": [
+        0,
+        1
+      ]
+    },
+    "reason": "10*2 is 20 person-days, not 21."
+  },
+  "E16": {
+    "state": "valid",
+    "metrics": {
+      "research_completeness": [
+        0,
+        1
+      ]
+    },
+    "reason": "Omitted required question remains in denominator."
+  },
+  "E17": {
+    "state": "valid",
+    "metrics": {
+      "contradiction_identified": [
+        0,
+        1
+      ],
+      "contradiction_reflected": [
+        0,
+        1
+      ]
+    },
+    "reason": "Known material conflict is not mentioned or reflected."
+  },
+  "E18": {
+    "state": "valid",
+    "metrics": {
+      "report_false_approval": [
+        1,
+        1
+      ],
+      "claim_false_acceptance": [
+        1,
+        1
+      ]
+    },
+    "reason": "Auditor approves and explicitly accepts a material unsupported claim."
+  },
+  "E19": {
+    "state": "valid",
+    "metrics": {
+      "auditor_false_rejection": [
+        1,
+        1
+      ]
+    },
+    "reason": "Auditor rejects independently clean synthetic report."
+  },
+  "E20": {
+    "state": "insufficient_adjudication",
+    "metrics": {
+      "claim_support": [
+        0,
+        1
+      ]
+    },
+    "reason": "Lost evidence does not earn support; trace records one truncation and evidence gap."
+  },
+  "E21": {
+    "state": "valid",
+    "metrics": {
+      "citation_precision": [
+        1,
+        1
+      ]
+    },
+    "reason": "Duplicate supporting relation counts once, not twice."
+  },
+  "E22": {
+    "state": "invalid_input",
+    "metrics": {},
+    "reason": "Duplicate proposition cannot inflate claim denominators."
+  },
+  "E23": {
+    "state": "invalid_input",
+    "metrics": {},
+    "reason": "Compound proposition must be split, not labeled vaguely partly supported."
+  },
+  "E24": {
+    "state": "valid",
+    "metrics": {
+      "report_false_approval": [
+        1,
+        1
+      ]
+    },
+    "reason": "Unresolved critical issue prevents a clean gold report; approval is false."
+  },
+  "E25": {
+    "state": "invalid_input",
+    "metrics": {},
+    "reason": "Frozen source digest does not match bytes."
+  },
+  "E26": {
+    "state": "invalid_input",
+    "metrics": {},
+    "reason": "Passage offsets outside the source are invalid."
+  },
+  "E27": {
+    "state": "invalid_input",
+    "metrics": {},
+    "reason": "Missing annotation cannot assert correct/fully-supported labels."
+  },
+  "E28": {
+    "state": "insufficient_adjudication",
+    "metrics": {
+      "adjudication_coverage": [
+        0,
+        1
+      ],
+      "claim_support": [
+        0,
+        1
+      ]
+    },
+    "reason": "Unresolved labels stay unresolved, not final support."
+  },
+  "E29": {
+    "state": "invalid_input",
+    "metrics": {},
+    "reason": "Empty dataset cannot return plausible quality metrics."
+  },
+  "E30": {
+    "state": "invalid_input",
+    "metrics": {},
+    "reason": "NaN numerical reference is invalid, not an undefined calculation."
+  }
+}
