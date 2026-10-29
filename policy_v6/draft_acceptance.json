@@ -1,0 +1,15 @@
+{
+  "timestamp_utc": "2026-10-29T07:28:33.409767+00:00",
+  "client_timestamp": "2026-10-29T00:28:33.409944-07:00",
+  "SCHEMA_VALID": true,
+  "ENFORCEMENT_VALID": true,
+  "PRICING_COMPLETE": false,
+  "ACTIVATION_AUTHORIZED": false,
+  "draft_sha256": "b8bc40d2ea170011332f74aa668debdaa423e655025c484be48f76b892b0e975",
+  "policy_digest": "79635e6c4f84a1bc733805484c835f6a7ffb2619efda2e6e3a767fc6ca3c7d3c",
+  "production_policy_exists": false,
+  "production_ledger_exists": false,
+  "paid_calls_executed": 0,
+  "deployment_performed": false,
+  "revision": "1b2f809911445cfb46cea8a1c228993e8d30fe2a"
+}

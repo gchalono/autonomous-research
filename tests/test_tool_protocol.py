@@ -18,6 +18,8 @@ The repair has two layers:
    attempt instead of failing the run immediately, and concatenated
    output is never split, regexed, or partially parsed.
 """
+from tests.conftest import ProtocolOnlyGuard
+
 import copy
 import json
 import os
@@ -135,6 +137,7 @@ def test_concatenated_json_rejected_not_parsed():
                 return Resp()
 
     provider = object.__new__(OpenAIProvider)
+    ProtocolOnlyGuard.attach(provider)
     provider.client = SDK()
     with pytest.raises(LLMError, match="non-JSON"):
         provider.complete("system", "USER OBJECTIVE: x", {}, "gpt-5.4-mini")
@@ -323,6 +326,7 @@ class _NativeRuleSDK:
 
 def _native_provider(sdk, fallback=None):
     provider = object.__new__(OpenAIProvider)
+    ProtocolOnlyGuard.attach(provider)
     provider.client = sdk
     provider.fallback_model = fallback
     return provider

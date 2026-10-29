@@ -1,0 +1,5 @@
+ss..                                                                     [100%]
+=========================== short test summary info ============================
+SKIPPED [1] policy_v5/test_policy_validation.py:50: BLOCKED: canonical draft has no authoritative rates/bounds; synthetic loader compatibility only
+SKIPPED [1] policy_v5/test_policy_validation.py:169: BLOCKED: no official production rates/units/input contracts; synthetic arithmetic is not provider evidence
+2 passed, 2 skipped, 13 deselected in 0.03s

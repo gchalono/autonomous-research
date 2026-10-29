@@ -1,0 +1,48 @@
+{
+  "currency": "USD",
+  "evidence": "",
+  "expires_at": "1970-01-01T00:00:00+00:00",
+  "openai": {
+    "gpt-5.4-mini": {
+      "max_input_tokens": null,
+      "max_output_tokens": 2048,
+      "max_request_bytes": 48000,
+      "input_token_overhead": null,
+      "input_bound_mode": "utf8_text",
+      "input_usd_per_million": null,
+      "output_usd_per_million": null,
+      "pricing_status": "UNVERIFIED"
+    },
+    "gpt-5.6-terra": {
+      "max_input_tokens": null,
+      "max_output_tokens": 2048,
+      "max_request_bytes": 48000,
+      "input_token_overhead": null,
+      "input_bound_mode": "provider_context",
+      "input_usd_per_million": null,
+      "output_usd_per_million": null,
+      "provider_context_tokens": null,
+      "context_evidence": "",
+      "pricing_status": "UNVERIFIED"
+    }
+  },
+  "tavily": {
+    "basic_search_max_usd": null,
+    "usd_per_credit": null,
+    "pricing_status": "UNVERIFIED",
+    "max_credits_per_search": null
+  },
+  "policy_schema_version": 1,
+  "state": "draft",
+  "experiment_id": "bounded-live-experiment-1",
+  "monetary_precision": 6,
+  "budget_micro_usd": 1000000,
+  "max_individual_reservation_micro_usd": 1000000,
+  "max_aggregate_reserved_micro_usd": 1000000,
+  "max_concurrent_requests": 1,
+  "max_sdk_retries": 0,
+  "pricing_references": {
+    "openai": [],
+    "tavily": []
+  }
+}

@@ -19,6 +19,16 @@ import urllib.request
 
 from ..security.permissions import Permission
 from .base import Tool, ToolResult
+from ..storage.spending import SpendingGuard, SpendingBlocked
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise SpendingBlocked('Tavily redirect refused; no additional request authorized')
+
+
+def _open_tavily(req, timeout=30):
+    return urllib.request.build_opener(_NoRedirect()).open(req, timeout=timeout)
+
 
 _USER_AGENT = "Mozilla/5.0 (compatible; autonomous-research/1.0)"
 
@@ -50,14 +60,20 @@ def _search_duckduckgo(query: str, max_results: int = 8) -> list[dict]:
 
 
 def _search_tavily(query: str, max_results: int) -> list[dict]:
+    if type(max_results) is not int or not 1 <= max_results <= 20:
+        raise SpendingBlocked("Tavily request exceeds bounded result envelope")
     key = os.environ["TAVILY_API_KEY"]
     body = json.dumps({"query": query, "max_results": max_results,
-                       "search_depth": "basic"}).encode()
+                       "search_depth": "basic", "include_usage": True}).encode()
     req = urllib.request.Request(
         "https://api.tavily.com/search", data=body,
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        data = json.loads(resp.read().decode())
+    def send():
+        with _open_tavily(req, timeout=30) as resp:
+            return json.loads(resp.read().decode())
+    guard = SpendingGuard.default()
+    guard.require_canonical()
+    data = guard.invoke_tavily(send)
     return [{"title": r.get("title", ""), "url": r.get("url", ""),
              "snippet": (r.get("content", "") or "")[:500]}
             for r in data.get("results", []) if r.get("url", "").startswith("http")]
@@ -74,9 +90,11 @@ def web_search_tool() -> Tool:
         if os.environ.get("TAVILY_API_KEY"):
             try:
                 results = _search_tavily(query, max_results)
+            except SpendingBlocked:
+                raise
             except Exception as exc:
                 errors.append(f"Tavily: {exc}")
-        if not results:
+        if not results and not os.environ.get("TAVILY_API_KEY"):
             try:
                 results = _search_duckduckgo(query, max_results)
             except Exception as exc:

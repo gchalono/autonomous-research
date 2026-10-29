@@ -32,6 +32,7 @@ from ..models.contracts import (AuditDecision, AuditReport, CorrectionTask,
 from ..storage import artifacts as art
 from ..storage.database import Store
 from ..storage.ledger import ValidationLedger
+from ..storage.spending import SpendingBlocked
 from ..tools.base import ToolRegistry, default_registry
 from ..tools.retrieval import fetch_url
 from . import correction as correction_mod
@@ -303,6 +304,15 @@ class Orchestrator:
                     State.FINALIZING: self._step_finalize,
                 }[state]
                 handler(project_id, cost_cb)
+        except SpendingBlocked as exc:
+            proj = self._project(project_id)
+            state = State(proj["state"])
+            self.store.update_counters(project_id, failure_reason="BLOCKED_COST_ENFORCEMENT: " + str(exc))
+            if state not in TERMINAL_STATES:
+                event = {State.PROMPT_REVIEW: "prompt_blocked_or_limit",
+                         State.EXECUTING: "execution_failed",
+                         State.EXECUTION_AUDIT: "audit_blocked"}.get(state, "failed")
+                self._transition(project_id, state, State.FAILED, event, str(exc))
         except BudgetExhausted as exc:
             proj = self._project(project_id)
             state = State(proj["state"])

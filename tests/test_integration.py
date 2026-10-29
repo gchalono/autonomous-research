@@ -40,8 +40,18 @@ def test_cli_run_status_report_cancel(tmp_path, monkeypatch):
     env = dict(os.environ)
     env["AR_PROJECTS_ROOT"] = str(tmp_path / "projects")
     main = os.path.join(os.path.dirname(__file__), "..", "main.py")
+    # Stub LLM selection alone does not replace the real search/fetch tools.
+    # Isolate those boundaries inside the subprocess so this offline test
+    # cannot spend API credits when runtime credentials are present.
+    offline_cli = (
+        "import main; from functools import partial; "
+        "from tests.conftest import fake_registry, fake_fetch; "
+        "main.Orchestrator = partial(main.Orchestrator, "
+        "registry=fake_registry(), fetch_fn=fake_fetch); "
+        "raise SystemExit(main.main())"
+    )
     run = subprocess.run(
-        [sys.executable, main, "--provider", "stub", "run", "Research stub things"],
+        [sys.executable, "-c", offline_cli, "--provider", "stub", "run", "Research stub things"],
         capture_output=True, text=True, env=env, timeout=120)
     assert run.returncode == 0, run.stderr
     assert "COMPLETED" in run.stdout

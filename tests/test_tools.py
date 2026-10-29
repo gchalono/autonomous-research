@@ -1,3 +1,4 @@
+from tests.policy_fixtures import reviewed_fixture
 """Tool tests: Tavily search path (mocked HTTP), DuckDuckGo fallback
 behaviour, and fetch-page extraction."""
 import io
@@ -23,18 +24,28 @@ class _FakeResponse:
         return False
 
 
-def test_tavily_search_used_when_key_set(monkeypatch):
+def test_tavily_search_used_when_key_set(monkeypatch, tmp_path):
+    from src.storage.spending import SpendingGuard
+    guard = SpendingGuard(tmp_path / "budget.db", reviewed_fixture({"currency": "USD", "expires_at": "2099-01-01T00:00:00+00:00", "evidence": "synthetic test pricing",
+        "tavily": {"basic_search_max_usd": .01, "usd_per_credit": .01}}))
+    guard.initialize()
+    import src.storage.spending as module
+    policy_path = tmp_path / 'policy.json'
+    policy_path.write_text(json.dumps(guard.policy))
+    monkeypatch.setattr(module, 'LEDGER_PATH', guard.path)
+    monkeypatch.setattr(module, 'POLICY_PATH', policy_path)
+    monkeypatch.setattr(SpendingGuard, "default", classmethod(lambda cls: guard))
     monkeypatch.setenv("TAVILY_API_KEY", "test-key")
 
     def fake_urlopen(req, timeout=30):
         assert "tavily" in req.full_url
-        payload = {"results": [
+        payload = {"usage": {"credits": 1}, "results": [
             {"title": "T1", "url": "https://example.com/1", "content": "snippet one"},
             {"title": "T2", "url": "https://example.com/2", "content": "snippet two"},
         ]}
         return _FakeResponse(json.dumps(payload))
 
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr("src.tools.search._open_tavily", fake_urlopen)
     tool = default_registry().get("web_search")
     result = tool.invoke({"query": "arbitrage"})
     assert result.ok

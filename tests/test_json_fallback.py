@@ -6,6 +6,8 @@ enforces, so these tests fail against the pre-fix implementation (which
 sent the user message unchanged in json_object mode) and pass with the
 fix (which appends an explicit json instruction to fallback inputs).
 """
+from tests.conftest import ProtocolOnlyGuard
+
 import pytest
 
 from src.agents.common import AgentOutputError, call_agent
@@ -62,6 +64,7 @@ class _RuleClient:
 
 def _provider(**kwargs):
     provider = object.__new__(OpenAIProvider)
+    ProtocolOnlyGuard.attach(provider)
     provider.client = _RuleClient(**kwargs)
     return provider
 

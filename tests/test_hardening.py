@@ -2,6 +2,8 @@
 transient-error recovery, model fallback recording, cancellation and
 budget terminal no-ops, structured run log, terminal-status mapping, and
 the extended claim-outcome vocabulary."""
+from tests.conftest import ProtocolOnlyGuard
+
 import json
 import os
 
@@ -105,6 +107,7 @@ def test_model_fallback_used_and_recorded():
             self.responses = FlakyResponses()
 
     provider = object.__new__(OpenAIProvider)
+    ProtocolOnlyGuard.attach(provider)
     provider.client = FlakyClient()
     provider.fallback_model = "gpt-5.4-mini"
     payload, _, _ = provider.complete("s", "u", {"title": "T"}, "gpt-5.6-terra")

@@ -59,3 +59,16 @@ def orch(settings, store):
                           registry=fake_registry(), fetch_fn=fake_fetch)
     engine._stub = client  # tests inspect call counts
     return engine
+
+
+class ProtocolOnlyGuard:
+    """For existing synthetic SDK protocol tests only, not a spending test.
+
+    No real SDK or network is attached in these tests. Spending-boundary
+    enforcement is exercised separately in test_spending_guard.py.
+    """
+    @staticmethod
+    def attach(provider):
+        # Explicitly replace the dispatch method only on synthetic SDK
+        # instances; production no longer accepts an optional duck guard.
+        provider._request = lambda **kwargs: provider._sdk.responses.create(**kwargs)

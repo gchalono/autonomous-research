@@ -7,6 +7,8 @@ persisted to the final report (not LLM assertions), full-re-execution
 wiring, transcript cost bounding, CLI error handling, and the
 passage-presence-is-not-support limit.
 """
+from tests.conftest import ProtocolOnlyGuard
+
 import json
 import os
 import subprocess
@@ -75,6 +77,7 @@ class _FlakyClient:
 
 def test_openai_provider_falls_back_on_schema_rejection():
     provider = object.__new__(OpenAIProvider)
+    ProtocolOnlyGuard.attach(provider)
     provider.client = _FlakyClient()
     payload, in_tokens, out_tokens = provider.complete(
         "system", "user", {"title": "T", "type": "object", "properties": {}},

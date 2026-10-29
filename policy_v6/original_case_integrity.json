@@ -1,0 +1,5 @@
+{
+  "test_P01_canonical_complete_policy_loading_is_blocked": true,
+  "test_P15_documented_maximum_cost_is_blocked": true,
+  "test_Q01_unknown_policy_fields_or_versions_rejected": true
+}

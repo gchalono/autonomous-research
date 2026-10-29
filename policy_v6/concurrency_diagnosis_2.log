@@ -1,0 +1,97 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0 -- /workspace/autonomous-research/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/autonomous-research
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 57 items / 56 deselected / 1 selected
+
+audit_v4/test_v4_adversarial.py::test_A05_thread_and_async_concurrency Timeout (0:00:10)!
+Thread 0x00007f4428d2d6c0 (most recent call first):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/concurrent/futures/thread.py", line 90 in _worker
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012 in run
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f442952e6c0 (most recent call first):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/concurrent/futures/thread.py", line 90 in _worker
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012 in run
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f442ad316c0 (most recent call first):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/concurrent/futures/thread.py", line 90 in _worker
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012 in run
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f442bd336c0 (most recent call first):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/concurrent/futures/thread.py", line 90 in _worker
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012 in run
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f4429d2f6c0 (most recent call first):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/concurrent/futures/thread.py", line 90 in _worker
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012 in run
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f442b5326c0 (most recent call first):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/concurrent/futures/thread.py", line 90 in _worker
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012 in run
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f442a5306c0 (most recent call first):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/concurrent/futures/thread.py", line 90 in _worker
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012 in run
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f440bfff6c0 (most recent call first):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/concurrent/futures/thread.py", line 90 in _worker
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012 in run
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x00007f442d898740 (most recent call first):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/selectors.py", line 468 in select
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py", line 1961 in _run_once
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py", line 645 in run_forever
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py", line 678 in run_until_complete
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py", line 118 in run
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py", line 195 in run
+  File "/workspace/autonomous-research/audit_v4/test_v4_adversarial.py", line 148 in test_A05_thread_and_async_concurrency
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/python.py", line 187 in pytest_pyfunc_call
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_execution.py", line 147 in _multicall
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 183 in _hookexec
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_caller.py", line 197 in __call__
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/python.py", line 1798 in runtest
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 184 in pytest_runtest_call
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_execution.py", line 147 in _multicall
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 183 in _hookexec
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_caller.py", line 197 in __call__
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 250 in <lambda>
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 361 in from_call
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 249 in call_and_report
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 139 in runtestprotocol
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/runner.py", line 118 in pytest_runtest_protocol
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_execution.py", line 147 in _multicall
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 183 in _hookexec
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_caller.py", line 197 in __call__
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/main.py", line 411 in pytest_runtestloop
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_execution.py", line 147 in _multicall
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 183 in _hookexec
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_caller.py", line 197 in __call__
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/main.py", line 387 in _main
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/main.py", line 333 in wrap_session
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/main.py", line 380 in pytest_cmdline_main
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_execution.py", line 147 in _multicall
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 183 in _hookexec
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pluggy/_caller.py", line 197 in __call__
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 262 in _main
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 286 in _console_main
+  File "/workspace/autonomous-research/.venv/lib/python3.12/site-packages/pytest/__main__.py", line 9 in <module>
+  File "<frozen runpy>", line 88 in _run_code
+  File "<frozen runpy>", line 198 in _run_module_as_main

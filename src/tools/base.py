@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from ..security.permissions import AuthorizationError, Permission, require_authorization
+from ..storage.spending import SpendingBlocked
 
 
 @dataclass
@@ -39,7 +40,7 @@ class Tool:
                               f"tool {self.name}")
         try:
             return self.run(arguments)
-        except AuthorizationError:
+        except (AuthorizationError, SpendingBlocked):
             raise
         except Exception as exc:  # tool errors are data, not crashes
             return ToolResult(ok=False, error=f"{type(exc).__name__}: {exc}")

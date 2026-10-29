@@ -18,6 +18,8 @@ import json
 import os
 from typing import Any, Callable, Optional
 
+from ..storage.spending import SpendingGuard, SpendingBlocked
+
 
 class LLMError(Exception):
     pass
@@ -138,19 +140,52 @@ JSON_MODE_SUFFIX = ("\n\nReturn your response as valid json only, matching "
                     "the requested schema.")
 
 
+class _ResponsesView:
+    __slots__ = ('owner',)
+
+    def __init__(self, owner):
+        self.owner = owner
+
+    def create(self, **kwargs):
+        return self.owner._request(**kwargs)
+
+    def __getattr__(self, name):
+        # Non-callable diagnostics remain usable by synthetic protocol tests.
+        value = getattr(self.owner._sdk.responses, name, None)
+        if not name.startswith('_') and isinstance(value, (list, dict, str, int, float, bool)):
+            return value
+        raise SpendingBlocked('unsupported SDK operation')
+
+
+class _ClientView:
+    __slots__ = ('owner',)
+
+    def __init__(self, owner):
+        self.owner = owner
+
+    @property
+    def responses(self):
+        return _ResponsesView(self.owner)
+
+    def __getattr__(self, name):
+        raise SpendingBlocked('unsupported SDK operation')
+
+
 class OpenAIProvider(LLMClient):
     """OpenAI Responses API, structured-output mode."""
 
     def __init__(self, api_key: Optional[str] = None, timeout_s: int = 120,
-                 fallback_model: Optional[str] = None):
+                 fallback_model: Optional[str] = None, guard=None):
         try:
-            from openai import OpenAI
+            from openai import OpenAI, DefaultHttpxClient
         except ImportError as exc:
             raise LLMError("openai package is not installed; run: pip install openai") from exc
         key = api_key or os.environ.get("OPENAI_API_KEY")
         if not key:
             raise LLMError("OPENAI_API_KEY is not set")
-        self.client = OpenAI(api_key=key, timeout=timeout_s)
+        self._sdk = OpenAI(api_key=key, timeout=timeout_s, max_retries=0,
+                           http_client=DefaultHttpxClient(follow_redirects=False))
+        self.guard = guard
         self.fallback_model = fallback_model
         # Models that actually executed (fallback included when used).
         self.models_used: set[str] = set()
@@ -178,6 +213,8 @@ class OpenAIProvider(LLMClient):
                 effective_input = user if is_strict else user + JSON_MODE_SUFFIX
                 try:
                     resp = self._create(system, effective_input, candidate, fmt)
+                except SpendingBlocked:
+                    raise
                 except Exception as exc:
                     last_error = exc
                     message = str(exc)
@@ -215,12 +252,32 @@ class OpenAIProvider(LLMClient):
             + (f"; strict-mode error was: {strict_error}" if strict_error else ""))
 
     def _create(self, system: str, user: str, model: str, fmt: dict):
-        return self.client.responses.create(
+        return self._request(
             model=model,
             instructions=system,
             input=user,
             text={"format": fmt},
         )
+
+    @property
+    def client(self):
+        # Never expose an unguarded SDK dispatch surface as application API.
+        return _ClientView(self)
+
+    @client.setter
+    def client(self, value):
+        # Compatibility for isolated transport injection; all public sends
+        # still route through _request and its canonical experiment check.
+        self._sdk = value
+
+    def _request(self, **kwargs):
+        guard = getattr(self, "guard", None) or SpendingGuard.default()
+        if type(guard) is not SpendingGuard:
+            raise SpendingBlocked('invalid production spending guard')
+        guard.require_canonical()
+        # Per-attempt guard is inside schema/model fallback loops. SDK retries
+        # are disabled at construction; do not wrap this in unguarded retries.
+        return guard.invoke_openai(self._sdk.responses.create, kwargs)
 
     # -- native function calling (executor) -------------------------------
     supports_native_tools = True
@@ -242,13 +299,15 @@ class OpenAIProvider(LLMClient):
         for candidate in candidates:
             for tool_defs, is_strict in ((tools, True), (_strip_strict(tools), False)):
                 try:
-                    resp = self.client.responses.create(
+                    resp = self._request(
                         model=candidate,
                         instructions=instructions,
                         input=input_items,
                         tools=tool_defs,
                         tool_choice="auto",
                     )
+                except SpendingBlocked:
+                    raise
                 except Exception as exc:
                     last_error = exc
                     message = str(exc)

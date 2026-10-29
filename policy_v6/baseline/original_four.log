@@ -1,0 +1,38 @@
+ssFF                                                                     [100%]
+=================================== FAILURES ===================================
+___ test_Q01_unknown_policy_fields_or_versions_rejected[unsupported_field0] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-21/test_Q01_unknown_policy_fields0')
+unsupported_field = {'unapproved_policy_field': True}
+evidence = {'test': 'test_Q01_unknown_policy_fields_or_versions_rejected[unsupported_field0]', 'expected': 'strict policy loader rejects unknown fields/version', 'injected_fields': {'unapproved_policy_field': True}}
+
+    @pytest.mark.parametrize('unsupported_field',[{'unapproved_policy_field':True},{'policy_schema_version':999}])
+    def test_Q01_unknown_policy_fields_or_versions_rejected(tmp_path,unsupported_field,evidence):
+        data=synthetic_policy();data.update(unsupported_field)
+        evidence.update(expected='strict policy loader rejects unknown fields/version',injected_fields=unsupported_field)
+>       with pytest.raises(SpendingBlocked):SpendingGuard(tmp_path/'never-initialized.db',data)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE SpendingBlocked
+
+policy_v5/test_policy_validation.py:176: Failed
+___ test_Q01_unknown_policy_fields_or_versions_rejected[unsupported_field1] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-21/test_Q01_unknown_policy_fields1')
+unsupported_field = {'policy_schema_version': 999}
+evidence = {'test': 'test_Q01_unknown_policy_fields_or_versions_rejected[unsupported_field1]', 'expected': 'strict policy loader rejects unknown fields/version', 'injected_fields': {'policy_schema_version': 999}}
+
+    @pytest.mark.parametrize('unsupported_field',[{'unapproved_policy_field':True},{'policy_schema_version':999}])
+    def test_Q01_unknown_policy_fields_or_versions_rejected(tmp_path,unsupported_field,evidence):
+        data=synthetic_policy();data.update(unsupported_field)
+        evidence.update(expected='strict policy loader rejects unknown fields/version',injected_fields=unsupported_field)
+>       with pytest.raises(SpendingBlocked):SpendingGuard(tmp_path/'never-initialized.db',data)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE SpendingBlocked
+
+policy_v5/test_policy_validation.py:176: Failed
+=========================== short test summary info ============================
+SKIPPED [1] policy_v5/test_policy_validation.py:48: BLOCKED: canonical draft has no authoritative rates/bounds; synthetic loader compatibility only
+SKIPPED [1] policy_v5/test_policy_validation.py:169: BLOCKED: no official production rates/units/input contracts; synthetic arithmetic is not provider evidence
+FAILED policy_v5/test_policy_validation.py::test_Q01_unknown_policy_fields_or_versions_rejected[unsupported_field0]
+FAILED policy_v5/test_policy_validation.py::test_Q01_unknown_policy_fields_or_versions_rejected[unsupported_field1]
+2 failed, 2 skipped, 13 deselected in 0.06s

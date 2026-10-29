@@ -1,0 +1,6 @@
+{
+  "family": 1,
+  "purpose": "asyncio local thread wakeup",
+  "send_error": "PermissionError",
+  "errno": 1
+}
