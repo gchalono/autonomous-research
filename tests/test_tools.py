@@ -60,7 +60,8 @@ def test_search_reports_failure_honestly_when_backends_empty(monkeypatch):
     def fake_urlopen(req, timeout=30):
         return _FakeResponse("<html><body>bot guard, no results</body></html>")
 
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr("src.tools.search.read_public_url",
+                        lambda url: b"<html><body>bot guard, no results</body></html>")
     tool = default_registry().get("web_search")
     result = tool.invoke({"query": "arbitrage"})
     assert not result.ok
@@ -74,7 +75,8 @@ def test_fetch_page_extracts_text(monkeypatch):
     def fake_urlopen(req, timeout=30):
         return _FakeResponse(html)
 
-    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr("src.tools.retrieval.read_public_url",
+                        lambda url: html.encode())
     title, text = fetch_url("https://example.com")
     assert title == "Example Title"
     assert "Hello world" in text

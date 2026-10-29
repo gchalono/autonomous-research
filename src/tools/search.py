@@ -19,6 +19,7 @@ import urllib.request
 
 from ..security.permissions import Permission
 from .base import Tool, ToolResult
+from .safe_http import read_public_url
 from ..storage.spending import SpendingGuard, SpendingBlocked
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -35,9 +36,7 @@ _USER_AGENT = "Mozilla/5.0 (compatible; autonomous-research/1.0)"
 
 def _search_duckduckgo(query: str, max_results: int = 8) -> list[dict]:
     url = "https://html.duckduckgo.com/html/?" + urllib.parse.urlencode({"q": query})
-    req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        page = resp.read().decode("utf-8", errors="replace")
+    page = read_public_url(url).decode("utf-8", errors="replace")
     results = []
     # Each result block: <a class="result__a" href="...">title</a> ... snippet
     for match in re.finditer(

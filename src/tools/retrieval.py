@@ -8,8 +8,7 @@ from __future__ import annotations
 
 import html as html_lib
 import re
-import urllib.request
-import urllib.parse
+from .safe_http import read_public_url
 
 from ..security.permissions import Permission
 from .base import Tool, ToolResult
@@ -20,11 +19,7 @@ _MAX_CHARS = 12000
 
 def fetch_url(url: str) -> tuple[str, str]:
     """Return (title, text) for a URL, raising on failure."""
-    if urllib.parse.urlsplit(url).hostname in {'api.openai.com', 'api.tavily.com'}:
-        raise ValueError('provider API endpoints are not source pages')
-    req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        raw = resp.read().decode("utf-8", errors="replace")
+    raw = read_public_url(url).decode("utf-8", errors="replace")
     title_match = re.search(r"<title[^>]*>(.*?)</title>", raw, re.S | re.I)
     title = html_lib.unescape(re.sub("<[^>]+>", "", title_match.group(1)).strip()) \
         if title_match else ""
@@ -39,7 +34,7 @@ def fetch_url(url: str) -> tuple[str, str]:
 
 def fetch_page_tool() -> Tool:
     def run(args: dict) -> ToolResult:
-        url = str(args.get("url", "")).strip()
+        url = str(args.get("url", ""))
         if not url.startswith(("http://", "https://")):
             return ToolResult(ok=False, error="url must start with http:// or https://")
         try:
