@@ -25,6 +25,21 @@ class LLMError(Exception):
     pass
 
 
+def _has_freeform_object(schema) -> bool:
+    """True if the schema contains an object node strict mode cannot express:
+    a bare dict field (type object, no properties, additionalProperties not
+    false). Property objects are fine: strictify forces additionalProperties
+    false on them."""
+    if isinstance(schema, dict):
+        if schema.get("type") == "object" and "properties" not in schema \
+                and schema.get("additionalProperties") is not False:
+            return True
+        return any(_has_freeform_object(v) for v in schema.values())
+    if isinstance(schema, list):
+        return any(_has_freeform_object(v) for v in schema)
+    return False
+
+
 def make_strict_schema(schema: dict) -> dict:
     """Rewrite a Pydantic JSON Schema into OpenAI strict-mode shape.
 
@@ -83,7 +98,7 @@ class LLMClient:
         raise NotImplementedError
 
     def create_tool_response(self, instructions: str, input_items: list,
-                             tools: list, model: str):
+                             tools: list, model: str, tool_choice="auto"):
         """One native tool-calling turn. Returns (output_items, in_tokens,
         out_tokens); output items are plain dicts round-trippable as the
         next turn's input (reasoning items included verbatim)."""
@@ -205,8 +220,11 @@ class OpenAIProvider(LLMClient):
             candidates.append(fallback)
         last_error: Exception | None = None
         strict_error: Exception | None = None
+        formats = (((strict_format, True), ({"type": "json_object"}, False))
+                   if not _has_freeform_object(strict_schema)
+                   else (({"type": "json_object"}, False),))
         for candidate in candidates:
-            for fmt, is_strict in ((strict_format, True), ({"type": "json_object"}, False)):
+            for fmt, is_strict in formats:
                 # json_object mode REQUIRES the word "json" in the input
                 # messages; strict mode does not, so only the fallback
                 # input gets the suffix (strict stays the preferred path).
@@ -283,7 +301,7 @@ class OpenAIProvider(LLMClient):
     supports_native_tools = True
 
     def create_tool_response(self, instructions: str, input_items: list,
-                             tools: list, model: str):
+                             tools: list, model: str, tool_choice="auto"):
         """Native Responses API function calling, mirroring complete()'s
         fallback discipline: strict tool definitions first, non-strict on
         a schema rejection, next candidate model on model-not-found.
@@ -304,7 +322,7 @@ class OpenAIProvider(LLMClient):
                         instructions=instructions,
                         input=input_items,
                         tools=tool_defs,
-                        tool_choice="auto",
+                        tool_choice=tool_choice,
                     )
                 except SpendingBlocked:
                     raise

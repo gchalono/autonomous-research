@@ -23,6 +23,7 @@ Two protocols, one contract:
 """
 from __future__ import annotations
 
+import inspect
 import json
 from typing import Callable
 
@@ -127,8 +128,9 @@ def _capped_items(spec_item: dict, rounds: list[list[dict]],
     items = [spec_item]
     if len(kept) < len(rounds):
         items.append({"role": "user", "content": "[Earlier tool results truncated "
-                     "to bound cost; the specification and the latest results "
-                     "are complete.]"})
+                     "to bound cost; tool results may have been dropped, "
+                     "including the most recent round. "
+                     "Consult the run history.]"})
     for round_items in kept:
         items.extend(round_items)
     return items
@@ -152,14 +154,48 @@ def run_execution_native(tool_client, model: str, base: list[str],
     tools = _function_tools(registry)
     spec_item = {"role": "user", "content": "\n\n".join(base)}
     rounds: list[list[dict]] = []
+    # Choose a call shape before invocation; never retry a provider TypeError.
+    _choice_keyword = False
+    _choice_positional_defaults = None
+    try:
+        _params = inspect.signature(tool_client.create_tool_response).parameters
+        _choice = _params.get("tool_choice")
+        _positional = [p for p in _params.values() if p.kind in (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD)]
+        if _choice is not None and _choice.kind == inspect.Parameter.POSITIONAL_ONLY:
+            _index = [p.name for p in _positional].index("tool_choice")
+            _padding = _positional[4:_index]
+            if _index >= 4 and all(p.default is not inspect.Parameter.empty
+                                   for p in _padding):
+                _choice_positional_defaults = tuple(p.default for p in _padding)
+        elif _choice is not None and (
+                _choice.kind == inspect.Parameter.KEYWORD_ONLY or
+                (_choice.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and
+                 _choice.name not in [p.name for p in _positional[:4]])):
+            _choice_keyword = True
+        elif (_choice is None or _choice.kind in (
+                inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)):
+            _choice_keyword = any(p.kind == inspect.Parameter.VAR_KEYWORD
+                                  for p in _params.values())
+    except (TypeError, ValueError):
+        pass  # Uninspectable clients retain the legacy four-argument call.
     for turn in range(max_iterations):
         request_items = _capped_items(spec_item, rounds)
         if cost_cb:
             est_in = max(1, len(json.dumps(request_items))) // 4
             cost_cb(model, est_in, estimated_output_tokens, preflight=True)
         try:
+            _args = (NATIVE_SYSTEM, request_items, tools, model)
+            _kwargs = {}
+            if turn == max_iterations - 1:
+                _forced_choice = {"type": "function", "name": SUBMIT_REPORT_NAME}
+                if _choice_positional_defaults is not None:
+                    _args += _choice_positional_defaults + (_forced_choice,)
+                elif _choice_keyword:
+                    _kwargs["tool_choice"] = _forced_choice
             out_items, in_tokens, out_tokens = tool_client.create_tool_response(
-                NATIVE_SYSTEM, request_items, tools, model)
+                *_args, **_kwargs)
         except LLMError as exc:
             if is_transient_message(str(exc)):
                 raise  # transient: orchestrator resumes later, not fails
@@ -255,8 +291,8 @@ def run_execution(client: LLMClient, model: str, spec, registry: ToolRegistry,
 
     The transcript is capped: without a cap, every turn re-sends all prior
     tool results and a long run's token cost grows quadratically. Oldest
-    tool-result blocks are dropped first (the spec and the latest results
-    are always kept).
+    tool-result blocks are dropped first; even the latest results can be
+    omitted if they exceed the cap. The fixed specification is retained.
     """
     MAX_TRANSCRIPT_CHARS = 60000
     tools_text = registry.describe()
@@ -309,9 +345,9 @@ def run_execution(client: LLMClient, model: str, spec, registry: ToolRegistry,
                 and message_blocks:
             message_blocks.pop(0)
         if len(message_blocks) < len(blocks):
-            message_blocks.insert(0, "[Earlier tool results truncated to bound "
-                                    "cost; the specification and the latest "
-                                    "results are complete.]")
+            message_blocks.insert(0, "[Tool results may have been dropped, "
+                                    "including the most recent round; consult "
+                                    "the run history.]")
         step = call_agent(client, model, SYSTEM,
                           "\n\n".join(base + message_blocks),
                           ExecutorStep, cost_cb=cost_cb,
