@@ -1,0 +1,90 @@
+{
+  "exit_status": 0,
+  "tests": [
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P01_canonical_complete_policy_loading_is_blocked",
+      "outcome": "skipped",
+      "trace": "('/workspace/autonomous-research/policy_v5/test_policy_validation.py', 50, 'Skipped: BLOCKED: canonical draft has no authoritative rates/bounds; synthetic loader compatibility only')"
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P02_missing_pricing",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P03_unknown_model",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P04_unknown_endpoint",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P05_oversized_input",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P06_output_limit",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P07_retry_after_unknown_completion",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P08_cumulative_ceiling",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P09_concurrent_capacity",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P10_unknown_billing_option",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P11_unapproved_fallback",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P12_missing_or_corrupt_policy",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P13_draft_inactive",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P14_new_run_cannot_reset_pool",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_P15_documented_maximum_cost_is_blocked",
+      "outcome": "skipped",
+      "trace": "('/workspace/autonomous-research/policy_v5/test_policy_validation.py', 169, 'Skipped: BLOCKED: no official production rates/units/input contracts; synthetic arithmetic is not provider evidence')"
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_Q01_unknown_policy_fields_or_versions_rejected[unsupported_field0]",
+      "outcome": "passed",
+      "trace": null
+    },
+    {
+      "test": "policy_v5/test_policy_validation.py::test_Q01_unknown_policy_fields_or_versions_rejected[unsupported_field1]",
+      "outcome": "passed",
+      "trace": null
+    }
+  ]
+}

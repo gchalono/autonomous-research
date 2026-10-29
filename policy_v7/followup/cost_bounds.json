@@ -1,0 +1,19 @@
+{
+  "basis": "user-provided official public schedule; not account invoice verification",
+  "mini_input_rate_with_regional_uplift": "0.825",
+  "mini_output_rate_with_regional_uplift": "4.95",
+  "mini_context_tokens": 400000,
+  "mini_output_cap": 128,
+  "mini_exact_usd": "0.3306336",
+  "mini_reserved_micro_usd": 330634,
+  "mini_previous_2048_output_reservation_micro_usd": 340138,
+  "terra_full_context_128_output_no_cache_usd": "4.202304",
+  "terra_full_context_128_output_30m_replacement_write_usd": "5.252304",
+  "terra_full_context_128_output_12h_replacement_write_usd": "10.502304",
+  "terra_billing_component_overlap": "UNVERIFIED; no-cache bound alone exceeds $1; replacement write examples are not extra additive charges or activation-ready quotes",
+  "tavily_basic_at_supplied_payg_usd": "0.008",
+  "tavily_advanced_at_supplied_payg_usd": "0.016",
+  "tavily_permitted": false,
+  "mini_cost_bound_status": "CONDITIONALLY_ENFORCEABLE: quoted public schedule reviewed; account-rate applicability and entitlement unverified. Inactive candidate only.",
+  "mini_source_status": "Public figures supplied by user with official URLs; not independently downloaded; declaration is not an account-level cap."
+}

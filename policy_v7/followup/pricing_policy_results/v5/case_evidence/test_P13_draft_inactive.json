@@ -1,0 +1,12 @@
+{
+  "test": "test_P13_draft_inactive",
+  "expected": "reading draft creates no live policy/allowance",
+  "before": [
+    false,
+    false
+  ],
+  "after": [
+    false,
+    false
+  ]
+}

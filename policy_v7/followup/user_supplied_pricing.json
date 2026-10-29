@@ -1,0 +1,48 @@
+{
+  "verification_date": "2026-10-29",
+  "provenance": "User-provided transcription of official public documentation. URLs not independently retrievable through required proxy (403); no account-specific evidence supplied.",
+  "openai": {
+    "gpt-5.4-mini": {
+      "input_usd_per_million": "0.75",
+      "cached_input_usd_per_million": "0.075",
+      "output_usd_per_million": "4.50",
+      "context_tokens": 400000,
+      "maximum_output_tokens": 128000,
+      "regional_processing_uplift": "0.10",
+      "source": "https://developers.openai.com/api/docs/models/gpt-5.4-mini"
+    },
+    "gpt-5.6-terra": {
+      "input_usd_per_million": "2.00",
+      "cached_input_usd_per_million": "0.20",
+      "output_usd_per_million": "12.00",
+      "context_tokens": 1050000,
+      "maximum_output_tokens": 128000,
+      "long_context_input_threshold": 272000,
+      "long_context_input_multiplier": "2",
+      "long_context_output_multiplier": "1.5",
+      "cache_write_30_min_input_multiplier": "1.25",
+      "cache_write_optional_12_hour_input_multiplier": "2.5",
+      "source": "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+      "cache_source": "https://developers.openai.com/api/docs/guides/prompt-caching"
+    }
+  },
+  "tavily": {
+    "basic_search_credits": 1,
+    "advanced_search_credits": 2,
+    "free_researcher_monthly_credits": 1000,
+    "pay_as_you_go_usd_per_credit": "0.008",
+    "basic_search_payg_usd": "0.008",
+    "advanced_search_payg_usd": "0.016",
+    "sources": [
+      "https://help.tavily.com/articles/6938147944-basic-vs-advanced-search-what-s-the-difference",
+      "https://www.tavily.com/pricing"
+    ],
+    "search_usage_response_contract": "UNVERIFIED",
+    "server_defaults_and_additional_charges": "UNVERIFIED",
+    "account_plan_applicability": "UNVERIFIED"
+  },
+  "account_access": {
+    "openai_models": "UNVERIFIED_ACCOUNT_ACCESS",
+    "tavily": "UNVERIFIED_ACCOUNT_ACCESS"
+  }
+}

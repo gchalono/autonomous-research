@@ -1,11 +1,17 @@
 {
-  "draft_id": "bounded-live-experiment-1-v6-draft",
-  "effective_guard_policy_sha256": "79635e6c4f84a1bc733805484c835f6a7ffb2619efda2e6e3a767fc6ca3c7d3c",
+  "draft_id": "bounded-live-experiment-1-v7-mini-public-draft",
+  "effective_guard_policy_sha256": "160b6e263ccf371343937d71344e79c9d63b97b41cf351c576923c15a5160ddc",
   "draft_path": "policy_v5/canonical_budget_policy.draft.json",
   "proposed_experiment": "bounded-live-experiment-1",
   "guard_ledger_schema_version": 2,
   "guard_policy_schema_version": 1,
   "budget_micro_usd": 1000000,
   "activation_ready": false,
-  "eligible_live_operations": []
+  "eligible_live_operations": [],
+  "candidate_operations": [
+    "openai.responses.create:gpt-5.4-mini"
+  ],
+  "account_access_verified": false,
+  "public_schedule_numeric_bounds_complete": true,
+  "applicable_billing_contract_verified": false
 }

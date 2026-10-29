@@ -1,0 +1,13 @@
+{
+  "state": "draft",
+  "reserved_micro_usd": 330634,
+  "aggregate_micro_usd": 330634,
+  "budget_micro_usd": 1000000,
+  "digest_matches": true,
+  "active_policy_exists": false,
+  "active_ledger_exists": false,
+  "production_source_changes": false,
+  "secret_indicators": [],
+  "scope": "Conditional public-schedule mini-only candidate; no activation or account validation.",
+  "test_log": "policy_v7/followup/pricing_offline_tests.log"
+}

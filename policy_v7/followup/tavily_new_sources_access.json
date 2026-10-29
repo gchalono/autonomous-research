@@ -1,0 +1,14 @@
+[
+  {
+    "url": "https://help.tavily.com/articles/6938147944-basic-vs-advanced-search-what-s-the-difference",
+    "accessed_at": "2026-10-29T08:32:54.538282+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "url": "https://www.tavily.com/pricing",
+    "accessed_at": "2026-10-29T08:32:54.553969+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+    "accessed_at": "2026-10-29T08:20:28.310606+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "url": "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+    "accessed_at": "2026-10-29T08:20:28.311424+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "url": "https://openai.com/api/pricing/",
+    "accessed_at": "2026-10-29T08:20:28.311995+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "url": "https://developers.openai.com/api/docs/guides/prompt-caching",
+    "accessed_at": "2026-10-29T08:20:28.314160+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "url": "https://docs.tavily.com/documentation/api-credits",
+    "accessed_at": "2026-10-29T08:20:28.319765+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  },
+  {
+    "url": "https://docs.tavily.com/documentation/api-reference/endpoint/search",
+    "accessed_at": "2026-10-29T08:20:28.320699+00:00",
+    "authenticated": false,
+    "error": "URLError: <urlopen error Tunnel connection failed: 403 Forbidden>"
+  }
+]

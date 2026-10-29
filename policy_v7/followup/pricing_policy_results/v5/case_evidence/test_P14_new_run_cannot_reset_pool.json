@@ -1,0 +1,38 @@
+{
+  "test": "test_P14_new_run_cannot_reset_pool",
+  "expected": "new caller/run label shares existing canonical allowance",
+  "calls": 2,
+  "snapshot": {
+    "cap_micro_usd": 1000000,
+    "budget_micro_usd": 1000000,
+    "blocked": null,
+    "integrity_error": null,
+    "financially_unresolved": false,
+    "requests": [
+      {
+        "id": "e00dfb88944d47c5b08c122ac600bc97",
+        "provider": "openai",
+        "model": "fixture-model",
+        "reserved_micro_usd": 400000,
+        "reported_micro_usd": 1300,
+        "usage": "{\"input_tokens\": 1, \"output_tokens\": 1, \"model\": \"fixture-model\", \"service_tier\": \"default\"}",
+        "state": "reported",
+        "experiment": "bounded-live-experiment-1",
+        "operation": "responses.create",
+        "created_at": "2026-10-29T08:42:55.195041+00:00"
+      },
+      {
+        "id": "e6e8803cb2db48a0a03d390c8396e1db",
+        "provider": "openai",
+        "model": "fixture-model",
+        "reserved_micro_usd": 400000,
+        "reported_micro_usd": 1300,
+        "usage": "{\"input_tokens\": 1, \"output_tokens\": 1, \"model\": \"fixture-model\", \"service_tier\": \"default\"}",
+        "state": "reported",
+        "experiment": "bounded-live-experiment-1",
+        "operation": "responses.create",
+        "created_at": "2026-10-29T08:42:55.196940+00:00"
+      }
+    ]
+  }
+}

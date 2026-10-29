@@ -1,0 +1,5 @@
+{
+  "test": "test_P11_unapproved_fallback",
+  "expected": "alternate model requires its own entry",
+  "requests": []
+}

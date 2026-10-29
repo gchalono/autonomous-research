@@ -1,48 +1,35 @@
 {
   "currency": "USD",
-  "evidence": "",
-  "expires_at": "1970-01-01T00:00:00+00:00",
+  "evidence": "Reviewed user-provided official public model-page extract, 2026-10-29. Mini only; full 400000-token context reservation, 128 output including reasoning, no cache discount, 10% residency uplift included. Web re-fetch and account entitlements/rates unverified. No execution authorization.",
+  "expires_at": "2026-11-05T00:00:00+00:00",
   "openai": {
     "gpt-5.4-mini": {
-      "max_input_tokens": null,
-      "max_output_tokens": 2048,
-      "max_request_bytes": 48000,
-      "input_token_overhead": null,
-      "input_bound_mode": "utf8_text",
-      "input_usd_per_million": null,
-      "output_usd_per_million": null,
-      "pricing_status": "UNVERIFIED"
-    },
-    "gpt-5.6-terra": {
-      "max_input_tokens": null,
-      "max_output_tokens": 2048,
-      "max_request_bytes": 48000,
-      "input_token_overhead": null,
+      "max_input_tokens": 400000,
+      "max_output_tokens": 128,
+      "max_request_bytes": 4096,
+      "input_token_overhead": 256,
       "input_bound_mode": "provider_context",
-      "input_usd_per_million": null,
-      "output_usd_per_million": null,
-      "provider_context_tokens": null,
-      "context_evidence": "",
-      "pricing_status": "UNVERIFIED"
+      "input_usd_per_million": "0.825",
+      "output_usd_per_million": "4.95",
+      "provider_context_tokens": 400000,
+      "context_evidence": "User-provided official model-page extract dated 2026-10-29: https://developers.openai.com/api/docs/models/gpt-5.4-mini states 400000 context tokens. Generic official Responses contract rejects over-context input with truncation disabled by default. Reserve entire context; 256 admission-padding field is NOT a claimed tokenizer/framing bound.",
+      "pricing_status": "VERIFIED_OFFICIAL"
     }
   },
-  "tavily": {
-    "basic_search_max_usd": null,
-    "usd_per_credit": null,
-    "pricing_status": "UNVERIFIED",
-    "max_credits_per_search": null
-  },
+  "tavily": null,
   "policy_schema_version": 1,
   "state": "draft",
   "experiment_id": "bounded-live-experiment-1",
   "monetary_precision": 6,
   "budget_micro_usd": 1000000,
-  "max_individual_reservation_micro_usd": 1000000,
-  "max_aggregate_reserved_micro_usd": 1000000,
+  "max_individual_reservation_micro_usd": 330634,
+  "max_aggregate_reserved_micro_usd": 330634,
   "max_concurrent_requests": 1,
   "max_sdk_retries": 0,
   "pricing_references": {
-    "openai": [],
+    "openai": [
+      "https://developers.openai.com/api/docs/models/gpt-5.4-mini"
+    ],
     "tavily": []
   }
 }

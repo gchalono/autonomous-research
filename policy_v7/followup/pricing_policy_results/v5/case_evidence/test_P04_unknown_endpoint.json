@@ -1,0 +1,5 @@
+{
+  "test": "test_P04_unknown_endpoint",
+  "expected": "unapproved endpoint blocked before SDK transport",
+  "calls": 0
+}
